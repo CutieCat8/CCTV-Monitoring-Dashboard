@@ -127,7 +127,6 @@ npm run preview
 ##  เอกสารเพิ่มเติม
 
 - [Guidelines](src/guidelines/Guidelines.md) - แนวทางการพัฒนา
-- [Attributions](src/Attributions.md) - เครดิตและแหล่งที่มา
 
 
 ##  ทีมพัฒนา
