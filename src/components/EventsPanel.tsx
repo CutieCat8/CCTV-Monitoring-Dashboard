@@ -1,0 +1,65 @@
+import { AlertTriangle, Clock, MapPin } from 'lucide-react';
+import { Event, events, violationTypes } from '../data/events';
+
+interface EventsPanelProps {
+  onEventClick: (event: Event) => void;
+}
+
+export function EventsPanel({ onEventClick }: EventsPanelProps) {
+  const formatTime = (date: Date) => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+  };
+
+  return (
+    <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-red-600" />
+          <h2 className="text-lg font-semibold text-gray-900">Detected Events</h2>
+        </div>
+        <p className="text-sm text-gray-500 mt-1">{events.length} violations today</p>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto">
+        {events.map((event) => {
+          const violationType = violationTypes[event.type];
+          
+          return (
+            <div
+              key={event.id}
+              onClick={() => onEventClick(event)}
+              className="p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <div className="relative rounded-lg overflow-hidden mb-3 bg-gray-200 h-28 flex items-center justify-center">
+                <div className="w-10 h-10 border-4 border-gray-300 border-t-gray-500 rounded-full animate-spin"></div>
+              </div>
+              
+              <div className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mb-2 ${violationType.color}`}>
+                {violationType.label}
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Clock className="w-4 h-4" />
+                  <span>{formatTime(event.timestamp)}</span>
+                </div>
+                <div className="flex items-start gap-2 text-sm text-gray-600">
+                  <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span className="line-clamp-2">{event.cameraName}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
