@@ -32,7 +32,10 @@ export function LiveMonitoring() {
           </div>
           
           {/* Right Panel - Events */}
-          <EventsPanel onEventClick={setSelectedEvent} />
+          <EventsPanel 
+            onEventClick={setSelectedEvent}
+            selectedCamera={selectedCamera}
+          />
         </div>
       </div>
       

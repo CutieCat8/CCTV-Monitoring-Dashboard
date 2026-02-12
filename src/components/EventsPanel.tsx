@@ -3,9 +3,14 @@ import { Event, events, violationTypes } from '../data/events';
 
 interface EventsPanelProps {
   onEventClick: (event: Event) => void;
+  selectedCamera?: number;
 }
 
-export function EventsPanel({ onEventClick }: EventsPanelProps) {
+export function EventsPanel({ onEventClick, selectedCamera }: EventsPanelProps) {
+  // กรอง events ตามกล้องที่เลือก
+  const filteredEvents = selectedCamera !== undefined 
+    ? events.filter(event => event.cameraId === selectedCamera)
+    : events;
   const formatTime = (date: Date) => {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -25,11 +30,17 @@ export function EventsPanel({ onEventClick }: EventsPanelProps) {
           <AlertTriangle className="w-5 h-5 text-red-600" />
           <h2 className="text-lg font-semibold text-gray-900">Detected Events</h2>
         </div>
-        <p className="text-sm text-gray-500 mt-1">{events.length} violations today</p>
+        <p className="text-sm text-gray-500 mt-1">{filteredEvents.length} violations today</p>
       </div>
       
       <div className="flex-1 overflow-y-auto">
-        {events.map((event) => {
+        {filteredEvents.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-gray-400 p-6">
+            <AlertTriangle className="w-12 h-12 mb-3" />
+            <p className="text-center">No violations detected for this camera</p>
+          </div>
+        ) : (
+          filteredEvents.map((event) => {
           const violationType = violationTypes[event.type];
           
           return (
@@ -58,7 +69,7 @@ export function EventsPanel({ onEventClick }: EventsPanelProps) {
               </div>
             </div>
           );
-        })}
+        }))}
       </div>
     </div>
   );
