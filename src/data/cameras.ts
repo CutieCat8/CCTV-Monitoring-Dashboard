@@ -20,4 +20,27 @@ export const cameras: Camera[] = [
   { id: 11, name: 'สี่แยกถนนเจริญเมือง สะพานนวรัฐ 1', status: 'live', location: 'สะพานนวรัฐ' },
   { id: 12, name: 'สี่แยกถนนเจริญเมือง สะพานนวรัฐ 2', status: 'live', location: 'สะพานนวรัฐ' },
   { id: 13, name: 'สี่แยกถนนเจริญเมือง สะพานนวรัฐ 3', status: 'live', location: 'สะพานนวรัฐ' },
+  { id: 14, name: 'ถนนบำรุงบุรี', status: 'live', location: 'ถนนบำรุงบุรี' },
+  { id: 15, name: 'ถนนลอยเคราะห์-สะพานเหล็ก', status: 'live', location: 'ถนนลอยเคราะห์' },
+  { id: 16, name: 'สี่แยกเมญ่า 3', status: 'live', location: 'สี่แยกเมญ่า' },
 ];
+
+// Map Equipment Name จาก API ไปเป็นชื่อกล้องใน Live Monitoring
+export function mapEquipmentNameToCameraName(equipmentName: string | undefined): string | null {
+  if (!equipmentName) return null;
+  
+  const mapping: Record<string, string> = {
+    'ถนนชัยศรีภูมิ-คูเมืองแยกช้างม่อย': 'ถนนชัยศรีภูมิ คูเมืองแยกช้างม่อย',
+    'ถนนมูลเมือง-คูเมืองแยกราชมรรคา': 'ถนนมูลเมือง',
+    '172.16.3.116': 'สี่แยกเมญ่า 1',
+    '172.16.3.117': 'สี่แยกเมญ่า 2',
+    '172.16.3.118': 'สี่แยกเมญ่า 3',
+    'ถนนท่าแพ': 'ถนนท่าแพ',
+    'ถนนท่าแพ-หน้าวัดอุปคุต': 'ถนนท่า หน้าวัดอุปคุต',
+    'ถนนช่างหล่อ-แยกถนนทิพย์เนตร': 'ถนนช้างหล่อ แยกถนนทิพย์เนตร',
+    'ถนนบำรุงบุรี': 'ถนนบำรุงบุรี',
+    'ถนนลอยเคราะห์-สะพานเหล็ก': 'ถนนลอยเคราะห์-สะพานเหล็ก',
+  };
+  
+  return mapping[equipmentName] || null;
+}

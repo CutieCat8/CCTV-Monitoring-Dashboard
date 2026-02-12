@@ -1,12 +1,98 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AlertTriangle, Calendar, Filter, Search, Download, Eye } from 'lucide-react';
-import { Event, events, violationTypes } from '../data/events';
+import { Event, violationTypes } from '../data/events';
 import { EventDetailPanel } from '../components/EventDetailPanel';
+import { getWebhooks, base64ToDataUrl, WebhookEntry } from '../utils/api';
+import { cameras, mapEquipmentNameToCameraName } from '../data/cameras';
 
 export function EventsPage() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [filterType, setFilterType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // ดึงข้อมูลจาก API
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        setLoading(true);
+        const response = await getWebhooks(100);
+        
+        // แปลง webhook data เป็น Event format
+        const apiEvents: Event[] = response.webhooks
+          .filter(webhook => webhook.body && Object.keys(webhook.body).length > 0)
+          .map((webhook: WebhookEntry) => {
+            const body = webhook.body;
+            
+            // Map equipment name ไปเป็นชื่อกล้อง
+            const mappedCameraName = mapEquipmentNameToCameraName(body.equipmentName);
+            
+            // หา camera จากชื่อที่ map ได้
+            let camera = cameras[0];
+            let cameraId = 0;
+            
+            if (mappedCameraName) {
+              const foundCamera = cameras.find(c => c.name === mappedCameraName);
+              if (foundCamera) {
+                camera = foundCamera;
+                cameraId = foundCamera.id;
+              }
+            } else if (body.boxCode) {
+              // fallback ไปใช้ boxCode
+              cameraId = parseInt(body.boxCode.replace('box_', '').replace(/^0+/, '')) || 0;
+              camera = cameras.find(c => c.id === cameraId) || cameras[0];
+            }
+            
+            // กำหนด violation type จาก taskName
+            let violationType: 'no-helmet' | 'illegal-parking' | 'red-light' | 'wrong-lane' = 'no-helmet';
+            if (body.taskName?.toLowerCase().includes('helmet')) {
+              violationType = 'no-helmet';
+            } else if (body.taskName?.toLowerCase().includes('parking')) {
+              violationType = 'illegal-parking';
+            } else if (body.taskName?.toLowerCase().includes('red') || body.taskName?.toLowerCase().includes('light')) {
+              violationType = 'red-light';
+            } else if (body.taskName?.toLowerCase().includes('lane')) {
+              violationType = 'wrong-lane';
+            }
+            
+            return {
+              id: webhook.id,
+              apiId: body.id,
+              type: violationType,
+              cameraId: cameraId,
+              cameraName: body.equipmentName || body.installationLocation || camera.name,
+              timestamp: body.sendTime ? new Date(body.sendTime) : new Date(webhook.timestamp),
+              thumbnail: body.imageUrl ? base64ToDataUrl(body.imageUrl) : '',
+              taskId: body.taskId,
+              boxCode: body.boxCode,
+              strRes: body.strRes,
+              taskName: body.taskName,
+              coordinate: body.coordinate,
+              equipmentId: body.equipmentId,
+              equipmentName: body.equipmentName,
+              installationArea: body.installationArea,
+              installationLocation: body.installationLocation,
+              sendTime: body.sendTime,
+              eventTypeId: body.eventTypeId
+            };
+          });
+        
+        // ใช้เฉพาะข้อมูลจาก API
+        setEvents(apiEvents);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching events:', err);
+        setError('Failed to load events from API.');
+        setEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchEvents();
+  }, []);
 
   // Filter events
   const filteredEvents = events.filter(event => {
@@ -43,7 +129,12 @@ export function EventsPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Detected Events</h2>
-            <p className="text-gray-500 mt-1">All traffic violations and incidents</p>
+            <p className="text-gray-500 mt-1">
+              {loading ? 'Loading events...' : `All traffic violations and incidents (${events.length} total)`}
+            </p>
+            {error && (
+              <p className="text-sm text-orange-600 mt-1">⚠️ {error}</p>
+            )}
           </div>
           
           <div className="flex items-center gap-3">
@@ -94,6 +185,7 @@ export function EventsPage() {
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Filter by violation type"
               >
                 <option value="all">All Types</option>
                 {Object.entries(violationTypes).map(([type, info]) => (
@@ -131,9 +223,17 @@ export function EventsPage() {
                     >
                       <div className="flex items-start gap-4">
                         {/* Thumbnail */}
-                        <div className="relative w-48 h-32 flex-shrink-0 rounded-lg overflow-hidden bg-gray-200 flex items-center justify-center">
-                          <div className="w-10 h-10 border-4 border-gray-300 border-t-gray-500 rounded-full animate-spin"></div>
-                        </div>
+                        {event.thumbnail ? (
+                          <img
+                            src={event.thumbnail}
+                            alt="Event snapshot"
+                            className="w-48 h-32 flex-shrink-0 rounded-lg overflow-hidden object-cover"
+                          />
+                        ) : (
+                          <div className="relative w-48 h-32 flex-shrink-0 rounded-lg overflow-hidden bg-gray-200 flex items-center justify-center">
+                            <div className="w-10 h-10 border-4 border-gray-300 border-t-gray-500 rounded-full animate-spin"></div>
+                          </div>
+                        )}
                         
                         {/* Content */}
                         <div className="flex-1">

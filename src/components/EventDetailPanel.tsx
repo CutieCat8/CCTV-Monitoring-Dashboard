@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { X, MapPin, Clock, Camera, TrendingUp, Car, Navigation, Download, Eye, CheckCircle } from 'lucide-react';
+import { X, MapPin, Clock, Camera, Download, Eye, CheckCircle } from 'lucide-react';
 import { Event, violationTypes } from '../data/events';
 
 interface EventDetailPanelProps {
@@ -11,13 +11,18 @@ export function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
   if (!event) return null;
 
   const violationType = violationTypes[event.type];
+  const eventId = event.apiId || `EV-${String(event.id).padStart(6, '0')}`;
   
-  // Mock additional data
-  const aiConfidence = Math.floor(Math.random() * 15) + 85; // 85-100%
-  const vehicleType = event.type === 'no-helmet' ? 'Motorcycle' : 
-                     event.type === 'illegal-parking' ? 'Sedan' : 'SUV';
-  const direction = ['Northbound', 'Southbound', 'Eastbound', 'Westbound'][Math.floor(Math.random() * 4)];
-  const eventId = `EV-${String(event.id).padStart(6, '0')}`;
+  // Parse coordinate
+  let latitude = '';
+  let longitude = '';
+  if (event.coordinate) {
+    const coords = event.coordinate.split(',');
+    if (coords.length === 2) {
+      longitude = coords[0].trim();
+      latitude = coords[1].trim();
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -52,6 +57,7 @@ export function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
                 <button
                   onClick={onClose}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  aria-label="Close panel"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -77,7 +83,7 @@ export function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
               <div className="space-y-4 mb-6">
                 <h3 className="font-semibold text-gray-900">Event Information</h3>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="flex items-center gap-2 text-gray-600 mb-1">
                       <Clock className="w-4 h-4" />
@@ -98,20 +104,6 @@ export function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
                       })}
                     </div>
                   </div>
-                  
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-gray-600 mb-1">
-                      <TrendingUp className="w-4 h-4" />
-                      <span className="text-xs">AI Confidence</span>
-                    </div>
-                    <div className="font-semibold text-gray-900">{aiConfidence}%</div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                      <div 
-                        className="bg-green-600 h-2 rounded-full"
-                        style={{ width: `${aiConfidence}%` }}
-                      ></div>
-                    </div>
-                  </div>
                 </div>
                 
                 <div className="bg-blue-50 rounded-lg p-4">
@@ -120,6 +112,9 @@ export function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
                     <div>
                       <div className="text-xs font-medium mb-1">Camera Location</div>
                       <div className="font-semibold">{event.cameraName}</div>
+                      {event.installationArea && (
+                        <div className="text-xs mt-1">Area: {event.installationArea}</div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -130,33 +125,87 @@ export function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
                 <h3 className="font-semibold text-gray-900">Additional Details</h3>
                 
                 <div className="space-y-3">
+                  {event.taskName && (
+                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                      <span className="text-sm text-gray-600">Detection Task</span>
+                      <span className="text-sm font-medium text-gray-900">{event.taskName}</span>
+                    </div>
+                  )}
+                  
+                  {event.apiId && (
+                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                      <span className="text-sm text-gray-600">API ID</span>
+                      <span className="text-sm font-medium text-gray-900 font-mono">{event.apiId}</span>
+                    </div>
+                  )}
+                  
+                  {event.taskId && (
+                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                      <span className="text-sm text-gray-600">Task ID</span>
+                      <span className="text-sm font-medium text-gray-900 font-mono">{event.taskId}</span>
+                    </div>
+                  )}
+                  
+                  {event.boxCode && (
+                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                      <span className="text-sm text-gray-600">Box Code</span>
+                      <span className="text-sm font-medium text-gray-900 font-mono">{event.boxCode}</span>
+                    </div>
+                  )}
+                  
+                  {event.equipmentId && (
+                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                      <span className="text-sm text-gray-600">Equipment ID</span>
+                      <span className="text-sm font-medium text-gray-900 font-mono text-xs">{event.equipmentId}</span>
+                    </div>
+                  )}
+                  
+                  {event.equipmentName && (
+                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                      <span className="text-sm text-gray-600">Equipment Name</span>
+                      <span className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                        <Camera className="w-4 h-4" />
+                        {event.equipmentName}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {latitude && longitude && (
+                    <>
+                      <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                        <span className="text-sm text-gray-600">Latitude</span>
+                        <span className="text-sm font-medium text-gray-900 font-mono">{latitude}</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                        <span className="text-sm text-gray-600">Longitude</span>
+                        <span className="text-sm font-medium text-gray-900 font-mono">{longitude}</span>
+                      </div>
+                    </>
+                  )}
+                  
+                  {event.installationLocation && (
+                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                      <span className="text-sm text-gray-600">Installation Location</span>
+                      <span className="text-sm font-medium text-gray-900">{event.installationLocation}</span>
+                    </div>
+                  )}
+                  
+                  {event.eventTypeId !== undefined && (
+                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                      <span className="text-sm text-gray-600">Event Type ID</span>
+                      <span className="text-sm font-medium text-gray-900">{event.eventTypeId}</span>
+                    </div>
+                  )}
+                  
                   <div className="flex items-center justify-between py-2 border-b border-gray-100">
                     <span className="text-sm text-gray-600">Violation Type</span>
                     <span className="text-sm font-medium text-gray-900">{violationType.label}</span>
                   </div>
                   
                   <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">Vehicle Type</span>
-                    <span className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                      <Car className="w-4 h-4" />
-                      {vehicleType}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">Direction</span>
-                    <span className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                      <Navigation className="w-4 h-4" />
-                      {direction}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
                     <span className="text-sm text-gray-600">Camera ID</span>
-                    <span className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                      <Camera className="w-4 h-4" />
-                      CAM-{String(event.cameraId).padStart(3, '0')}
-                    </span>
+                    <span className="text-sm font-medium text-gray-900">CAM-{String(event.cameraId).padStart(3, '0')}</span>
                   </div>
                 </div>
               </div>

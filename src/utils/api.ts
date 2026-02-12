@@ -1,8 +1,43 @@
 // Utility functions สำหรับเรียกใช้ API Endpoints
 
-const API_BASE_URL = import.meta.env.PROD 
-  ? 'https://your-domain.vercel.app' 
-  : 'http://localhost:3000';
+// ใช้ Production API เสมอ เพราะ local ไม่มี API endpoints
+const API_BASE_URL = 'https://cctv-monitoring-dashboard.vercel.app';
+
+// ============================================
+// Webhook Response Types
+// ============================================
+
+export interface WebhookData {
+  id: string;
+  strRes?: string;
+  taskId?: string;
+  boxCode?: string;
+  imageUrl?: string; // Base64 encoded image
+  taskName?: string;
+  coordinate?: string;
+  equipmentId?: string;
+  equipmentName?: string;
+  installationArea?: string;
+  installationLocation?: string;
+  sendTime?: number;
+  eventTypeId?: string;
+  [key: string]: any;
+}
+
+export interface WebhookEntry {
+  id: string;
+  body: WebhookData;
+  timestamp: string;
+}
+
+export interface WebhooksResponse {
+  success: boolean;
+  total: number;
+  showing: number;
+  limit: number;
+  message: string;
+  webhooks: WebhookEntry[];
+}
 
 // ============================================
 // Data API
@@ -50,11 +85,25 @@ export async function sendWebhook(payload: any) {
   return response.json();
 }
 
-export async function getWebhooks() {
-  const response = await fetch(`${API_BASE_URL}/api/webhook`);
+export async function getWebhooks(limit: number = 100): Promise<WebhooksResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/webhook?limit=${limit}`);
   
   if (!response.ok) throw new Error('Failed to fetch webhooks');
   return response.json();
+}
+
+// แปลง Base64 image เป็น data URL
+export function base64ToDataUrl(base64: string): string {
+  // ถ้าขึ้นต้นด้วย /9j/ แสดงว่าเป็น JPEG
+  if (base64.startsWith('/9j/')) {
+    return `data:image/jpeg;base64,${base64}`;
+  }
+  // ถ้าขึ้นต้นด้วย iVBOR แสดงว่าเป็น PNG
+  if (base64.startsWith('iVBOR')) {
+    return `data:image/png;base64,${base64}`;
+  }
+  // default เป็น JPEG
+  return `data:image/jpeg;base64,${base64}`;
 }
 
 // ============================================

@@ -1,10 +1,23 @@
 export interface Event {
-  id: number;
+  id: string | number;
   type: 'no-helmet' | 'illegal-parking' | 'red-light' | 'wrong-lane';
   cameraId: number;
   cameraName: string;
   timestamp: Date;
   thumbnail: string;
+  // ข้อมูลจาก API
+  taskId?: string;
+  boxCode?: string;
+  strRes?: string;
+  apiId?: string;
+  taskName?: string;
+  coordinate?: string;
+  equipmentId?: string;
+  equipmentName?: string;
+  installationArea?: string;
+  installationLocation?: string;
+  sendTime?: number;
+  eventTypeId?: string;
 }
 
 export const violationTypes = {
