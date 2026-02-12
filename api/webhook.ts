@@ -58,11 +58,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ดู webhook ที่ได้รับ (GET)
     if (req.method === 'GET') {
-      // Get limit from query parameter, default to 100, max 1000
-      const limit = Math.min(parseInt(String(req.query.limit || '100')), 1000);
+      // Get limit from query parameter, default to 10, max 50
+      const limit = Math.min(parseInt(String(req.query.limit || '10')), 50);
+      
+      // Count total entries
+      const countResult = await sql`SELECT COUNT(*) as total FROM webhook_entries`;
+      const total = parseInt(String(countResult.rows[0].total));
       
       const result = await sql<WebhookRow>`
-        SELECT id, headers, body, query, created_at
+        SELECT id, body, created_at
         FROM webhook_entries
         ORDER BY id DESC
         LIMIT ${limit}
@@ -70,15 +74,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const webhooks = result.rows.map((row) => ({
         id: row.id,
-        headers: row.headers,
         body: row.body,
-        query: row.query,
         timestamp: row.created_at
       }));
 
       return res.status(200).json({
         success: true,
-        count: webhooks.length,
+        total: total,
+        showing: webhooks.length,
+        limit: limit,
+        message: `Showing ${webhooks.length} of ${total} total webhooks`,
         webhooks
       });
     }
