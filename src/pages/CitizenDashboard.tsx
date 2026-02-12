@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { useTheme } from '../contexts/ThemeContext';
 
 type ReportStatus = 'submitted' | 'in-progress' | 'resolved';
 
@@ -31,6 +32,7 @@ interface RecentReport {
 
 export function CitizenDashboard() {
   const [showAlert, setShowAlert] = useState(true);
+  const { isDarkMode } = useTheme();
 
   const recentReports: RecentReport[] = [
     {
@@ -85,16 +87,23 @@ export function CitizenDashboard() {
     <div className="p-6 space-y-6">
       {/* Page Title */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-1">ภาพรวมเมือง</h1>
-        <p className="text-gray-400 text-sm">ข้อมูล ณ วันที่ 25 มกราคม 2026</p>
+        <h1 className={`text-3xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>ภาพรวมเมือง</h1>
+        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>ข้อมูล ณ วันที่ 25 มกราคม 2026</p>
       </div>
 
       {/* Alert Banner */}
       {showAlert && (
-        <div className="bg-gradient-to-r from-orange-900/50 to-red-950/30 border border-orange-800/50 rounded-2xl p-5 relative">
+        <div className={`rounded-2xl p-5 relative border ${
+          isDarkMode 
+            ? 'bg-gradient-to-r from-orange-900/50 to-red-950/30 border-orange-800/50' 
+            : 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-200'
+        }`}>
           <button
             onClick={() => setShowAlert(false)}
-            className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            className={`absolute top-4 right-4 transition-colors ${
+              isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+            }`}
+            aria-label="ปิดประกาศ"
           >
             <X className="w-5 h-5" />
           </button>
@@ -103,8 +112,8 @@ export function CitizenDashboard() {
               <Megaphone className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="text-white font-semibold mb-1">ประกาศจราจรชั่วคราว</h3>
-              <p className="text-gray-300 text-sm leading-relaxed">
+              <h3 className={`font-semibold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>ประกาศจราจรชั่วคราว</h3>
+              <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 ปิดถนนชั่วคราววันที่ 26-28 มกราคม เนื่องจากงานเทศกาลฤดูหนาว หลีกเลี่ยงเส้นทางหลักในเขตเมืองเก่า ขอความร่วมมือหลีกเลี่ยงเส้นทาง 2 ช่วงเวลาเร่งด่วน - ช่วงเช้า 7-9 น. ช่วงเย็น 16-19 น.
               </p>
               <button className="text-orange-400 text-sm mt-2 hover:text-orange-300 transition-colors">
@@ -118,11 +127,15 @@ export function CitizenDashboard() {
       {/* Main Stats Cards */}
       <div className="grid grid-cols-3 gap-4">
         {/* PM2.5 Card */}
-        <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-2xl p-6 border border-neutral-800">
+        <div className={`rounded-2xl p-6 border ${
+          isDarkMode 
+            ? 'bg-gradient-to-br from-neutral-900 to-neutral-950 border-neutral-800' 
+            : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
+        }`}>
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Wind className="w-5 h-5 text-gray-400" />
-              <span className="text-gray-400 text-sm">คุณภาพอากาศ PM2.5</span>
+              <Wind className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>คุณภาพอากาศ PM2.5</span>
             </div>
             <div className="flex items-center gap-1 text-green-500 text-sm">
               <TrendingDown className="w-4 h-4" />
@@ -131,8 +144,8 @@ export function CitizenDashboard() {
           </div>
 
           <div className="mb-4">
-            <div className="text-5xl font-bold text-white mb-1">
-              45 <span className="text-2xl text-gray-500">µg/m³</span>
+            <div className={`text-5xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              45 <span className={`text-2xl ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>µg/m³</span>
             </div>
             <div className="flex items-center gap-2 mt-2">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -141,11 +154,11 @@ export function CitizenDashboard() {
           </div>
 
           <div className="space-y-2">
-            <div className="text-xs text-gray-400">ค่าเฉลี่ยย่อยอำเภอ ช้างม่อย เมืองเชียงใหม่</div>
-            <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+            <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>ค่าเฉลี่ยย่อยอำเภอ ช้างม่อย เมืองเชียงใหม่</div>
+            <div className={`h-2 rounded-full overflow-hidden ${isDarkMode ? 'bg-neutral-800' : 'bg-gray-200'}`}>
               <div className="h-full w-[30%] bg-gradient-to-r from-green-500 via-yellow-500 to-orange-500 rounded-full"></div>
             </div>
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-600'}`}>
               <span>0-50</span>
               <span>51-100</span>
               <span>101-150</span>
@@ -155,18 +168,22 @@ export function CitizenDashboard() {
         </div>
 
         {/* Weather Card */}
-        <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-2xl p-6 border border-neutral-800">
+        <div className={`rounded-2xl p-6 border ${
+          isDarkMode 
+            ? 'bg-gradient-to-br from-neutral-900 to-neutral-950 border-neutral-800' 
+            : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
+        }`}>
           <div className="flex items-center gap-2 mb-4">
-            <CloudSun className="w-5 h-5 text-gray-400" />
-            <span className="text-gray-400 text-sm">สภาพอากาศ</span>
+            <CloudSun className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+            <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>สภาพอากาศ</span>
           </div>
 
           <div className="flex items-start justify-between mb-6">
             <div>
-              <div className="text-5xl font-bold text-white mb-1">
+              <div className={`text-5xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                 24°
               </div>
-              <div className="text-gray-400 text-sm">แดดจ้า</div>
+              <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>แดดจ้า</div>
             </div>
             <div className="w-16 h-16 text-yellow-500">
               <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
@@ -187,25 +204,29 @@ export function CitizenDashboard() {
             <div className="flex items-center gap-2 text-sm">
               <Droplets className="w-4 h-4 text-blue-400" />
               <div>
-                <div className="text-gray-500 text-xs">ความชื้น</div>
-                <div className="text-white font-medium">65%</div>
+                <div className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-600'}`}>ความชื้น</div>
+                <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>65%</div>
               </div>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Navigation className="w-4 h-4 text-gray-400" />
               <div>
-                <div className="text-gray-500 text-xs">ลม</div>
-                <div className="text-white font-medium">12 km/h</div>
+                <div className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-600'}`}>ลม</div>
+                <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>12 km/h</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Safety Status Card */}
-        <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-2xl p-6 border border-neutral-800">
+        <div className={`rounded-2xl p-6 border ${
+          isDarkMode 
+            ? 'bg-gradient-to-br from-neutral-900 to-neutral-950 border-neutral-800' 
+            : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
+        }`}>
           <div className="flex items-center gap-2 mb-4">
-            <CheckCircle2 className="w-5 h-5 text-gray-400" />
-            <span className="text-gray-400 text-sm">สถานะความปลอดภัย</span>
+            <CheckCircle2 className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+            <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>สถานะความปลอดภัย</span>
           </div>
 
           <div className="mb-6">
@@ -213,16 +234,16 @@ export function CitizenDashboard() {
               <CheckCircle2 className="w-8 h-8 text-green-500" />
             </div>
             <div className="text-2xl font-bold text-green-500 mb-1">ปลอดภัย</div>
-            <div className="text-sm text-gray-400">ไม่มีเหตุฉุกเฉิน</div>
+            <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>ไม่มีเหตุฉุกเฉิน</div>
           </div>
 
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-400">กล้อง CCTV ทำงาน</span>
+              <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>กล้อง CCTV ทำงาน</span>
               <span className="text-green-500">324/320</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">ไฟถนนทำงาน</span>
+              <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>ไฟถนนทำงาน</span>
               <span className="text-green-500">1,243/1,250</span>
             </div>
           </div>
@@ -232,14 +253,18 @@ export function CitizenDashboard() {
       {/* Traffic and Incident Stats */}
       <div className="grid grid-cols-4 gap-4">
         {/* Traffic Congestion */}
-        <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-2xl p-5 border border-neutral-800">
+        <div className={`rounded-2xl p-5 border ${
+          isDarkMode 
+            ? 'bg-gradient-to-br from-neutral-900 to-neutral-950 border-neutral-800' 
+            : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
+        }`}>
           <div className="flex items-center gap-3 mb-3">
             <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center">
               <Car className="w-6 h-6 text-orange-500" />
             </div>
             <div className="flex-1">
-              <div className="text-gray-400 text-sm">รถติดในเมือง</div>
-              <div className="text-3xl font-bold text-white">12</div>
+              <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>รถติดในเมือง</div>
+              <div className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>12</div>
             </div>
           </div>
           <div className="flex items-center gap-1 text-green-500 text-sm">
@@ -249,14 +274,18 @@ export function CitizenDashboard() {
         </div>
 
         {/* Accidents */}
-        <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-2xl p-5 border border-neutral-800">
+        <div className={`rounded-2xl p-5 border ${
+          isDarkMode 
+            ? 'bg-gradient-to-br from-neutral-900 to-neutral-950 border-neutral-800' 
+            : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
+        }`}>
           <div className="flex items-center gap-3 mb-3">
             <div className="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center">
               <AlertTriangle className="w-6 h-6 text-red-500" />
             </div>
             <div className="flex-1">
-              <div className="text-gray-400 text-sm">อุบัติเหตุ</div>
-              <div className="text-3xl font-bold text-white">3</div>
+              <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>อุบัติเหตุ</div>
+              <div className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>3</div>
             </div>
           </div>
           <div className="flex items-center gap-1 text-red-500 text-sm">
@@ -266,14 +295,18 @@ export function CitizenDashboard() {
         </div>
 
         {/* Violations */}
-        <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-2xl p-5 border border-neutral-800">
+        <div className={`rounded-2xl p-5 border ${
+          isDarkMode 
+            ? 'bg-gradient-to-br from-neutral-900 to-neutral-950 border-neutral-800' 
+            : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
+        }`}>
           <div className="flex items-center gap-3 mb-3">
             <div className="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center">
               <Lightbulb className="w-6 h-6 text-yellow-500" />
             </div>
             <div className="flex-1">
-              <div className="text-gray-400 text-sm">การฝ่าฝืน</div>
-              <div className="text-3xl font-bold text-white">28</div>
+              <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>การฝ่าฝืน</div>
+              <div className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>28</div>
             </div>
           </div>
           <div className="flex items-center gap-1 text-green-500 text-sm">
@@ -283,14 +316,18 @@ export function CitizenDashboard() {
         </div>
 
         {/* Citizen Reports */}
-        <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-2xl p-5 border border-neutral-800">
+        <div className={`rounded-2xl p-5 border ${
+          isDarkMode 
+            ? 'bg-gradient-to-br from-neutral-900 to-neutral-950 border-neutral-800' 
+            : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
+        }`}>
           <div className="flex items-center gap-3 mb-3">
             <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
               <Megaphone className="w-6 h-6 text-blue-500" />
             </div>
             <div className="flex-1">
-              <div className="text-gray-400 text-sm">สิ่งเตือนใหม่</div>
-              <div className="text-3xl font-bold text-white">8</div>
+              <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>สิ่งเตือนใหม่</div>
+              <div className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>8</div>
             </div>
           </div>
           <div className="flex items-center gap-1 text-blue-500 text-sm">
@@ -303,10 +340,16 @@ export function CitizenDashboard() {
       {/* Bottom Section - Map and Recent Reports */}
       <div className="grid grid-cols-2 gap-4">
         {/* Map Preview */}
-        <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-2xl border border-neutral-800 overflow-hidden">
-          <div className="p-5 border-b border-neutral-800 flex items-center justify-between">
-            <h3 className="text-white font-semibold flex items-center gap-2">
-              <svg className="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <div className={`rounded-2xl border overflow-hidden ${
+          isDarkMode 
+            ? 'bg-gradient-to-br from-neutral-900 to-neutral-950 border-neutral-800' 
+            : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
+        }`}>
+          <div className={`p-5 border-b flex items-center justify-between ${
+            isDarkMode ? 'border-neutral-800' : 'border-gray-200'
+          }`}>
+            <h3 className={`font-semibold flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              <svg className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                 <circle cx="12" cy="10" r="3" />
               </svg>
@@ -319,7 +362,9 @@ export function CitizenDashboard() {
           </div>
 
           {/* Mini Map */}
-          <div className="h-64 relative bg-gradient-to-br from-neutral-950 to-black p-4">
+          <div className={`h-64 relative p-4 ${
+            isDarkMode ? 'bg-gradient-to-br from-neutral-950 to-black' : 'bg-gradient-to-br from-gray-100 to-gray-200'
+          }`}>
             {/* Grid Background */}
             <div className="absolute inset-0 opacity-10">
               <svg width="100%" height="100%">
@@ -340,44 +385,48 @@ export function CitizenDashboard() {
             {/* Incident Markers */}
             <div className="absolute top-12 left-16">
               <div className="relative">
-                <div className="absolute inset-0 w-12 h-12 bg-red-500 rounded-full opacity-30 animate-pulse blur-xl" style={{ left: '-6px', top: '-6px' }}></div>
+                <div className="absolute -inset-1.5 w-12 h-12 bg-red-500 rounded-full opacity-30 animate-pulse blur-xl"></div>
                 <div className="w-3 h-3 bg-red-500 rounded-full relative z-10"></div>
               </div>
             </div>
 
             <div className="absolute top-32 left-32">
               <div className="relative">
-                <div className="absolute inset-0 w-16 h-16 bg-orange-500 rounded-full opacity-30 animate-pulse blur-xl" style={{ left: '-8px', top: '-8px' }}></div>
+                <div className="absolute -inset-2 w-16 h-16 bg-orange-500 rounded-full opacity-30 animate-pulse blur-xl"></div>
                 <div className="w-3 h-3 bg-orange-500 rounded-full relative z-10"></div>
               </div>
             </div>
 
             <div className="absolute bottom-20 right-24">
               <div className="relative">
-                <div className="absolute inset-0 w-16 h-16 bg-orange-500 rounded-full opacity-30 animate-pulse blur-xl" style={{ left: '-8px', top: '-8px' }}></div>
+                <div className="absolute -inset-2 w-16 h-16 bg-orange-500 rounded-full opacity-30 animate-pulse blur-xl"></div>
                 <div className="w-3 h-3 bg-orange-500 rounded-full relative z-10"></div>
               </div>
             </div>
 
             <div className="absolute top-20 right-20">
               <div className="relative">
-                <div className="absolute inset-0 w-12 h-12 bg-yellow-500 rounded-full opacity-30 animate-pulse blur-xl" style={{ left: '-6px', top: '-6px' }}></div>
+                <div className="absolute -inset-1.5 w-12 h-12 bg-yellow-500 rounded-full opacity-30 animate-pulse blur-xl"></div>
                 <div className="w-3 h-3 bg-yellow-500 rounded-full relative z-10"></div>
               </div>
             </div>
 
             {/* Legend */}
-            <div className="absolute bottom-4 left-4 bg-neutral-950/80 backdrop-blur-sm rounded-lg p-3 border border-neutral-800">
+            <div className={`absolute bottom-4 left-4 backdrop-blur-sm rounded-lg p-3 border ${
+              isDarkMode 
+                ? 'bg-neutral-950/80 border-neutral-800' 
+                : 'bg-white/80 border-gray-300'
+            }`}>
               <div className="space-y-1 text-xs">
-                <div className="flex items-center gap-2 text-gray-400">
+                <div className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                   <span>อุบัติเหตุ</span>
                 </div>
-                <div className="flex items-center gap-2 text-gray-400">
+                <div className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                   <span>รถติด</span>
                 </div>
-                <div className="flex items-center gap-2 text-gray-400">
+                <div className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
                   <span>การฝ่าฝืน</span>
                 </div>
@@ -393,17 +442,25 @@ export function CitizenDashboard() {
               ช้างม่อย
             </div>
 
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-gray-500 text-xs">
+            <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 text-xs ${
+              isDarkMode ? 'text-gray-500' : 'text-gray-600'
+            }`}>
               อัพเดท 15 วิที่ผ่านมา
             </div>
           </div>
         </div>
 
         {/* Recent Reports */}
-        <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-2xl border border-neutral-800 overflow-hidden">
-          <div className="p-5 border-b border-neutral-800 flex items-center justify-between">
-            <h3 className="text-white font-semibold flex items-center gap-2">
-              <svg className="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <div className={`rounded-2xl border overflow-hidden ${
+          isDarkMode 
+            ? 'bg-gradient-to-br from-neutral-900 to-neutral-950 border-neutral-800' 
+            : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
+        }`}>
+          <div className={`p-5 border-b flex items-center justify-between ${
+            isDarkMode ? 'border-neutral-800' : 'border-gray-200'
+          }`}>
+            <h3 className={`font-semibold flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              <svg className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
               การร้องเรียนล่าสุด
@@ -420,19 +477,25 @@ export function CitizenDashboard() {
               return (
                 <div
                   key={report.id}
-                  className="bg-neutral-950 border border-neutral-800 rounded-xl p-4 hover:border-neutral-700 transition-colors"
+                  className={`border rounded-xl p-4 transition-colors ${
+                    isDarkMode 
+                      ? 'bg-neutral-950 border-neutral-800 hover:border-neutral-700' 
+                      : 'bg-white border-gray-200 hover:border-gray-300'
+                  }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-neutral-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-5 h-5 text-gray-400" />
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      isDarkMode ? 'bg-neutral-900' : 'bg-gray-100'
+                    }`}>
+                      <Icon className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-white text-sm font-medium mb-1">{report.title}</h4>
+                      <h4 className={`text-sm font-medium mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{report.title}</h4>
                       <div className={`text-xs ${getStatusColor(report.status)} mb-1`}>
                         {report.location}
                       </div>
-                      <div className="text-xs text-gray-500">{report.time}</div>
+                      <div className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-600'}`}>{report.time}</div>
                     </div>
                   </div>
                 </div>
