@@ -62,7 +62,7 @@ export function EventsPanel({ onEventClick, selectedCamera }: EventsPanelProps) 
               apiId: body.id,
               type: violationType,
               cameraId: cameraId,
-              cameraName: body.equipmentName || body.installationLocation || camera.name,
+              cameraName: mappedCameraName || camera.name,
               timestamp: body.sendTime ? new Date(body.sendTime) : new Date(webhook.timestamp),
               thumbnail: body.imageUrl ? base64ToDataUrl(body.imageUrl) : '',
               taskId: body.taskId,
