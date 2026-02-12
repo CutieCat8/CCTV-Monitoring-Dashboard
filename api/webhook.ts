@@ -79,9 +79,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
   } catch (error) {
+    console.error('Database error:', error);
     return res.status(500).json({
       success: false,
-      error: 'Database error'
+      error: 'Database error',
+      details: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString()
     });
   }
 
