@@ -58,10 +58,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ดู webhook ที่ได้รับ (GET)
     if (req.method === 'GET') {
+      // Get limit from query parameter, default to 100, max 1000
+      const limit = Math.min(parseInt(String(req.query.limit || '100')), 1000);
+      
       const result = await sql<WebhookRow>`
         SELECT id, headers, body, query, created_at
         FROM webhook_entries
         ORDER BY id DESC
+        LIMIT ${limit}
       `;
 
       const webhooks = result.rows.map((row) => ({

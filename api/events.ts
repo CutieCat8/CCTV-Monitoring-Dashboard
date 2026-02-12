@@ -75,10 +75,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ดึง events ทั้งหมด (GET)
     if (req.method === 'GET') {
+      // Get limit from query parameter, default to 100, max 1000
+      const limit = Math.min(parseInt(String(req.query.limit || '100')), 1000);
+      
       const result = await sql<EventRow>`
         SELECT id, type, camera, description, severity, location, payload, created_at
         FROM events
         ORDER BY id DESC
+        LIMIT ${limit}
       `;
 
       const events = result.rows.map((row) => ({

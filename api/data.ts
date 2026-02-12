@@ -55,10 +55,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ส่งข้อมูลกลับ (GET)
     if (req.method === 'GET') {
+      // Get limit from query parameter, default to 100, max 1000
+      const limit = Math.min(parseInt(String(req.query.limit || '100')), 1000);
+      
       const result = await sql<DataRow>`
         SELECT id, payload, created_at
         FROM data_entries
         ORDER BY id DESC
+        LIMIT ${limit}
       `;
 
       const data = result.rows.map((row) => ({
