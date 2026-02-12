@@ -1,4 +1,5 @@
 import { MapPin, Clock, AlertCircle, AlertTriangle, Info, CheckCircle } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 
 type AnnouncementType = 'emergency' | 'warning' | 'info';
 
@@ -13,6 +14,7 @@ interface Announcement {
 }
 
 export function CitizenAnnouncements() {
+  const { isDarkMode } = useTheme();
   const announcements: Announcement[] = [
     {
       id: '1',
@@ -142,8 +144,8 @@ export function CitizenAnnouncements() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white mb-2">ประกาศจากเจ้าหน้าที่</h1>
-        <p className="text-gray-400 text-sm">
+        <h1 className={`text-3xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>ประกาศจากเจ้าหน้าที่</h1>
+        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
           ข่าวสารและประกาศอัพเดตจากระบบ Officer Dashboard
         </p>
       </div>
@@ -170,7 +172,7 @@ export function CitizenAnnouncements() {
               {/* Content */}
               <div className="flex-1">
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="text-white font-semibold text-lg pr-4">
+                  <h3 className={`font-semibold text-lg pr-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                     {announcement.title}
                   </h3>
                   <span
@@ -182,11 +184,11 @@ export function CitizenAnnouncements() {
                   </span>
                 </div>
 
-                <p className="text-gray-300 text-sm leading-relaxed mb-4">
+                <p className={`text-sm leading-relaxed mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   {announcement.description}
                 </p>
 
-                <div className="flex items-center gap-4 text-sm text-gray-400">
+                <div className={`flex items-center gap-4 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
                     <span>{announcement.location}</span>

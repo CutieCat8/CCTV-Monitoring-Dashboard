@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Lightbulb, Construction, CircleDot, Upload, MapPin } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 
 type ReportType = 'streetlight' | 'road' | 'traffic-light';
 type ReportStatus = 'submitted' | 'in-progress' | 'resolved';
@@ -14,6 +15,7 @@ interface Report {
 }
 
 export function CitizenReport() {
+  const { isDarkMode } = useTheme();
   const [selectedType, setSelectedType] = useState<ReportType | null>(null);
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
@@ -99,20 +101,20 @@ export function CitizenReport() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-neutral-800">
-        <h1 className="text-3xl font-bold text-white mb-1">ระบบร้องเรียนปัญหา</h1>
-        <p className="text-gray-400 text-sm">แจ้งปัญหาสาธารณูปโภคและติดตามสถานะ</p>
+      <div className={`p-6 border-b ${isDarkMode ? 'border-neutral-800' : 'border-gray-200'}`}>
+        <h1 className={`text-3xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>ระบบร้องเรียนปัญหา</h1>
+        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>แจ้งปัญหาสาธารณูปโภคและติดตามสถานะ</p>
       </div>
 
       {/* Content */}
       <div className="flex-1 flex overflow-hidden p-6 gap-6">
         {/* Left Panel - Report Form */}
-        <div className="w-[45%] bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-2xl border border-neutral-800 p-6 overflow-auto">
-          <h2 className="text-xl font-bold text-white mb-6">แจ้งปัญหาใหม่</h2>
+        <div className={`w-[45%] rounded-2xl border p-6 overflow-auto ${isDarkMode ? 'bg-gradient-to-br from-neutral-900 to-neutral-950 border-neutral-800' : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'}`}>
+          <h2 className={`text-xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>แจ้งปัญหาใหม่</h2>
 
           {/* Report Type Selector */}
           <div className="mb-6">
-            <label className="text-sm text-gray-400 mb-3 block">ประเภทปัญหา</label>
+            <label className={`text-sm mb-3 block ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>ประเภทปัญหา</label>
             <div className="grid grid-cols-3 gap-3">
               {reportTypes.map((item) => {
                 const Icon = item.icon;
@@ -123,18 +125,18 @@ export function CitizenReport() {
                     onClick={() => setSelectedType(item.type)}
                     className={`p-4 rounded-xl border transition-all ${
                       isSelected
-                        ? 'bg-neutral-800 border-neutral-700'
-                        : 'bg-neutral-950 border-neutral-800 hover:border-neutral-700'
+                        ? isDarkMode ? 'bg-neutral-800 border-neutral-700' : 'bg-gray-100 border-gray-300'
+                        : isDarkMode ? 'bg-neutral-950 border-neutral-800 hover:border-neutral-700' : 'bg-white border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <div
                       className={`w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-2 ${
-                        isSelected ? 'bg-neutral-700' : 'bg-neutral-900'
+                        isSelected ? (isDarkMode ? 'bg-neutral-700' : 'bg-gray-200') : (isDarkMode ? 'bg-neutral-900' : 'bg-gray-100')
                       }`}
                     >
-                      <Icon className="w-6 h-6 text-white" />
+                      <Icon className={`w-6 h-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`} />
                     </div>
-                    <div className="text-white text-xs font-medium">{item.label}</div>
+                    <div className={`text-xs font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{item.label}</div>
                   </button>
                 );
               })}
@@ -143,28 +145,28 @@ export function CitizenReport() {
 
           {/* Location Input */}
           <div className="mb-6">
-            <label className="text-sm text-gray-400 mb-2 block">สถานที่</label>
+            <label className={`text-sm mb-2 block ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>สถานที่</label>
             <div className="relative">
               <input
                 type="text"
                 placeholder="ระบุที่อยู่หรือชื่อสถานที่"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 pl-11 text-white placeholder-gray-600 focus:outline-none focus:border-neutral-700 transition-all"
+                className={`w-full border rounded-xl px-4 py-3 pl-11 focus:outline-none transition-all ${isDarkMode ? 'bg-neutral-950 border-neutral-800 text-white placeholder-gray-600 focus:border-neutral-700' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-gray-400'}`}
               />
-              <MapPin className="w-5 h-5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <MapPin className={`w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
             </div>
           </div>
 
           {/* Description Input */}
           <div className="mb-6">
-            <label className="text-sm text-gray-400 mb-2 block">รายละเอียด</label>
+            <label className={`text-sm mb-2 block ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>รายละเอียด</label>
             <textarea
               placeholder="อธิบายปัญหาที่พบ..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={5}
-              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-neutral-700 transition-all resize-none"
+              className={`w-full border rounded-xl px-4 py-3 focus:outline-none transition-all resize-none ${isDarkMode ? 'bg-neutral-950 border-neutral-800 text-white placeholder-gray-600 focus:border-neutral-700' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-gray-400'}`}
             />
           </div>
 

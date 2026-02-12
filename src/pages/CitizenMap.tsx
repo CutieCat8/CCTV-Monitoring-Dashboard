@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Layers, HelpCircle } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 
 type IncidentType = 'accident' | 'congestion' | 'violation';
 
@@ -13,6 +14,7 @@ interface Incident {
 }
 
 export function CitizenMap() {
+  const { isDarkMode } = useTheme();
   const [filters, setFilters] = useState({
     accident: true,
     congestion: true,
@@ -64,13 +66,13 @@ export function CitizenMap() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-neutral-800">
-        <h1 className="text-3xl font-bold text-white mb-1">แผนที่เมือง</h1>
-        <p className="text-gray-400 text-sm">แสดงจุดเหตุการณ์และสถานะการจราจร</p>
+      <div className={`p-6 border-b ${isDarkMode ? 'border-neutral-800' : 'border-gray-200'}`}>
+        <h1 className={`text-3xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>แผนที่เมือง</h1>
+        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>แสดงจุดเหตุการณ์และสถานะการจราจร</p>
       </div>
 
       {/* Map Container */}
-      <div className="flex-1 relative bg-gradient-to-br from-neutral-950 to-black overflow-hidden">
+      <div className={`flex-1 relative overflow-hidden ${isDarkMode ? 'bg-gradient-to-br from-neutral-950 to-black' : 'bg-gradient-to-br from-gray-100 to-gray-200'}`}>
         {/* Grid Background */}
         <div className="absolute inset-0 opacity-20">
           <svg width="100%" height="100%">
@@ -90,19 +92,19 @@ export function CitizenMap() {
 
         {/* Layers Button - Top Right */}
         <div className="absolute top-6 right-6 z-20">
-          <button className="flex items-center gap-2 bg-neutral-950/80 backdrop-blur-sm border border-neutral-800 text-white px-4 py-2 rounded-lg hover:bg-neutral-900/80 transition-colors">
+          <button className={`flex items-center gap-2 backdrop-blur-sm border px-4 py-2 rounded-lg transition-colors ${isDarkMode ? 'bg-neutral-950/80 border-neutral-800 text-white hover:bg-neutral-900/80' : 'bg-white/80 border-gray-300 text-gray-900 hover:bg-gray -50/80'}`}>
             <Layers className="w-5 h-5" />
             <span className="text-sm">เลเยอร์</span>
           </button>
         </div>
 
         {/* Filter Panel - Top Left */}
-        <div className="absolute top-6 left-6 bg-neutral-950/80 backdrop-blur-sm rounded-xl p-5 border border-neutral-800 z-20 w-72">
+        <div className={`absolute top-6 left-6 backdrop-blur-sm rounded-xl p-5 border z-20 w-72 ${isDarkMode ? 'bg-neutral-950/80 border-neutral-800' : 'bg-white/80 border-gray-300'}`}>
           <div className="flex items-center gap-2 mb-4">
-            <svg className="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
             </svg>
-            <h3 className="text-white font-semibold">ตัวกรอง</h3>
+            <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>ตัวกรอง</h3>
           </div>
 
           <div className="space-y-3">
@@ -111,10 +113,10 @@ export function CitizenMap() {
                 type="checkbox"
                 checked={filters.accident}
                 onChange={() => toggleFilter('accident')}
-                className="w-5 h-5 rounded bg-neutral-900 border-neutral-700 cursor-pointer"
+                className={`w-5 h-5 rounded cursor-pointer ${isDarkMode ? 'bg-neutral-900 border-neutral-700' : 'bg-gray-200 border-gray-400'}`}
               />
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <span className="text-white text-sm">อุบัติเหตุ</span>
+              <span className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>อุบัติเหตุ</span>
             </label>
 
             <label className="flex items-center gap-3 cursor-pointer group">
@@ -122,10 +124,10 @@ export function CitizenMap() {
                 type="checkbox"
                 checked={filters.congestion}
                 onChange={() => toggleFilter('congestion')}
-                className="w-5 h-5 rounded bg-neutral-900 border-neutral-700 cursor-pointer"
+                className={`w-5 h-5 rounded cursor-pointer ${isDarkMode ? 'bg-neutral-900 border-neutral-700' : 'bg-gray-200 border-gray-400'}`}
               />
               <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-              <span className="text-white text-sm">รถติด</span>
+              <span className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>รถติด</span>
             </label>
 
             <label className="flex items-center gap-3 cursor-pointer group">
@@ -133,23 +135,23 @@ export function CitizenMap() {
                 type="checkbox"
                 checked={filters.violation}
                 onChange={() => toggleFilter('violation')}
-                className="w-5 h-5 rounded bg-neutral-900 border-neutral-700 cursor-pointer"
+                className={`w-5 h-5 rounded cursor-pointer ${isDarkMode ? 'bg-neutral-900 border-neutral-700' : 'bg-gray-200 border-gray-400'}`}
               />
               <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-              <span className="text-white text-sm">การละเมิด</span>
+              <span className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>การฝ่าฝืน</span>
             </label>
           </div>
         </div>
 
         {/* Stats Panel - Top Right (below layers button) */}
-        <div className="absolute top-20 right-6 bg-neutral-950/80 backdrop-blur-sm rounded-xl p-5 border border-neutral-800 z-20 w-64">
-          <h3 className="text-white font-semibold mb-4 text-sm">สถิติ</h3>
+        <div className={`absolute top-20 right-6 backdrop-blur-sm rounded-xl p-5 border z-20 w-64 ${isDarkMode ? 'bg-neutral-950/80 border-neutral-800' : 'bg-white/80 border-gray-300'}`}>
+          <h3 className={`font-semibold mb-4 text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>สถิติ</h3>
           
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span className="text-gray-300 text-sm">อุบัติเหตุ</span>
+                <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>อุบัติเหตุ</span>
               </div>
               <span className="text-red-400 font-bold text-xl">{stats.accident}</span>
             </div>
@@ -157,7 +159,7 @@ export function CitizenMap() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                <span className="text-gray-300 text-sm">รถติด</span>
+                <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>รถติด</span>
               </div>
               <span className="text-orange-400 font-bold text-xl">{stats.congestion}</span>
             </div>
@@ -165,13 +167,13 @@ export function CitizenMap() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <span className="text-gray-300 text-sm">การละเมิด</span>
+                <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>การละเมิด</span>
               </div>
               <span className="text-yellow-400 font-bold text-xl">{stats.violation}</span>
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-neutral-800 text-xs text-gray-500">
+          <div className={`mt-4 pt-3 border-t text-xs ${isDarkMode ? 'border-neutral-800 text-gray-500' : 'border-gray-300 text-gray-600'}`}>
             คลิกที่จุดเพื่อดูรายละเอียด
           </div>
         </div>
@@ -209,14 +211,14 @@ export function CitizenMap() {
         </div>
 
         {/* Bottom Info */}
-        <div className="absolute bottom-6 left-6 text-sm text-gray-400 z-20">
+        <div className={`absolute bottom-6 left-6 text-sm z-20 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
           เชียงใหม่ | อำเภอเมืองเชียงใหม่
         </div>
 
         {/* Help Button - Bottom Right */}
         <div className="absolute bottom-6 right-6 z-20">
-          <button className="w-10 h-10 bg-neutral-950/80 backdrop-blur-sm border border-neutral-800 rounded-lg flex items-center justify-center hover:bg-neutral-900/80 transition-colors">
-            <HelpCircle className="w-5 h-5 text-gray-400" />
+          <button className={`w-10 h-10 backdrop-blur-sm border rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? 'bg-neutral-950/80 border-neutral-800 hover:bg-neutral-900/80' : 'bg-white/80 border-gray-300 hover:bg-gray-50/80'}`}>
+            <HelpCircle className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
           </button>
         </div>
       </div>
