@@ -1,22 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sql } from '@vercel/postgres';
 
-async function ensureEventsTable() {
-  await sql`
-    CREATE TABLE IF NOT EXISTS events (
-      id BIGSERIAL PRIMARY KEY,
-      type TEXT,
-      camera TEXT,
-      description TEXT,
-      severity TEXT,
-      location TEXT,
-      payload JSONB NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
-}
-
-type EventRow = {
+// In-memory storage for events (resets on serverless function restart)
+const eventsStore: Array<{
   id: number;
   type: string | null;
   camera: string | null;
@@ -25,7 +10,9 @@ type EventRow = {
   location: string | null;
   payload: unknown;
   created_at: string;
-};
+}> = [];
+
+let nextId = 1;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // อนุญาต CORS
@@ -38,37 +25,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await ensureEventsTable();
-
     // สร้าง event ใหม่ (POST)
     if (req.method === 'POST') {
       const payload = req.body ?? {};
-      const payloadJson = JSON.stringify(payload);
       const type = payload.type ?? null;
       const camera = payload.camera ?? null;
       const description = payload.description ?? null;
       const severity = payload.severity ?? null;
       const location = payload.location ?? null;
 
-      const result = await sql<EventRow>`
-        INSERT INTO events (type, camera, description, severity, location, payload)
-        VALUES (${type}, ${camera}, ${description}, ${severity}, ${location}, ${payloadJson}::jsonb)
-        RETURNING id, type, camera, description, severity, location, payload, created_at
-      `;
+      const entry = {
+        id: nextId++,
+        type,
+        camera,
+        description,
+        severity,
+        location,
+        payload,
+        created_at: new Date().toISOString()
+      };
 
-      const saved = result.rows[0];
+      eventsStore.push(entry);
 
       return res.status(201).json({
         success: true,
         event: {
-          id: saved.id,
-          type: saved.type,
-          camera: saved.camera,
-          description: saved.description,
-          severity: saved.severity,
-          location: saved.location,
-          payload: saved.payload,
-          createdAt: saved.created_at
+          id: entry.id,
+          type: entry.type,
+          camera: entry.camera,
+          description: entry.description,
+          severity: entry.severity,
+          location: entry.location,
+          payload: entry.payload,
+          createdAt: entry.created_at
         }
       });
     }
@@ -78,23 +67,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Get limit from query parameter, default to 100, max 1000
       const limit = Math.min(parseInt(String(req.query.limit || '100')), 1000);
       
-      const result = await sql<EventRow>`
-        SELECT id, type, camera, description, severity, location, payload, created_at
-        FROM events
-        ORDER BY id DESC
-        LIMIT ${limit}
-      `;
-
-      const events = result.rows.map((row) => ({
-        id: row.id,
-        type: row.type,
-        camera: row.camera,
-        description: row.description,
-        severity: row.severity,
-        location: row.location,
-        payload: row.payload,
-        createdAt: row.created_at
-      }));
+      const events = eventsStore
+        .slice(-limit)
+        .reverse()
+        .map((row) => ({
+          id: row.id,
+          type: row.type,
+          camera: row.camera,
+          description: row.description,
+          severity: row.severity,
+          location: row.location,
+          payload: row.payload,
+          createdAt: row.created_at
+        }));
 
       return res.status(200).json({
         success: true,
@@ -102,10 +87,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
   } catch (error) {
-    console.error('Database error:', error);
+    console.error('Error:', error);
     return res.status(500).json({
       success: false,
-      error: 'Database error',
+      error: 'Server error',
       details: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString()
     });

@@ -1,21 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sql } from '@vercel/postgres';
 
-async function ensureDataTable() {
-  await sql`
-    CREATE TABLE IF NOT EXISTS data_entries (
-      id BIGSERIAL PRIMARY KEY,
-      payload JSONB NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
-}
-
-type DataRow = {
+// In-memory storage for data (resets on serverless function restart)
+const dataStore: Array<{
   id: number;
   payload: unknown;
   created_at: string;
-};
+}> = [];
+
+let nextId = 1;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // อนุญาต CORS
@@ -28,27 +20,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await ensureDataTable();
-
     // รับข้อมูล (POST)
     if (req.method === 'POST') {
       const data = req.body ?? {};
-      const payloadJson = JSON.stringify(data);
-      const result = await sql<DataRow>`
-        INSERT INTO data_entries (payload)
-        VALUES (${payloadJson}::jsonb)
-        RETURNING id, payload, created_at
-      `;
+      
+      const entry = {
+        id: nextId++,
+        payload: data,
+        created_at: new Date().toISOString()
+      };
 
-      const saved = result.rows[0];
+      dataStore.push(entry);
 
       return res.status(200).json({
         success: true,
         message: 'ได้รับข้อมูลแล้ว',
         saved: {
-          id: saved.id,
-          data: saved.payload,
-          timestamp: saved.created_at
+          id: entry.id,
+          data: entry.payload,
+          timestamp: entry.created_at
         }
       });
     }
@@ -58,18 +48,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Get limit from query parameter, default to 100, max 1000
       const limit = Math.min(parseInt(String(req.query.limit || '100')), 1000);
       
-      const result = await sql<DataRow>`
-        SELECT id, payload, created_at
-        FROM data_entries
-        ORDER BY id DESC
-        LIMIT ${limit}
-      `;
-
-      const data = result.rows.map((row) => ({
-        id: row.id,
-        data: row.payload,
-        timestamp: row.created_at
-      }));
+      const data = dataStore
+        .slice(-limit)
+        .reverse()
+        .map((row) => ({
+          id: row.id,
+          data: row.payload,
+          timestamp: row.created_at
+        }));
 
       return res.status(200).json({
         success: true,
@@ -80,17 +66,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ลบข้อมูลทั้งหมด (DELETE)
     if (req.method === 'DELETE') {
-      await sql`DELETE FROM data_entries`;
+      dataStore.length = 0;
+      nextId = 1;
       return res.status(200).json({
         success: true,
         message: 'ลบข้อมูลทั้งหมดแล้ว'
       });
     }
   } catch (error) {
-    console.error('Database error:', error);
+    console.error('Error:', error);
     return res.status(500).json({
       success: false,
-      error: 'Database error',
+      error: 'Server error',
       details: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString()
     });

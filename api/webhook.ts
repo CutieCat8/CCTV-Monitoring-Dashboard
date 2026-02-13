@@ -1,25 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sql } from '@vercel/postgres';
 
-async function ensureWebhookTable() {
-  await sql`
-    CREATE TABLE IF NOT EXISTS webhook_entries (
-      id BIGSERIAL PRIMARY KEY,
-      headers JSONB NOT NULL,
-      body JSONB NOT NULL,
-      query JSONB NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
-}
-
-type WebhookRow = {
+// In-memory storage for webhooks (resets on serverless function restart)
+// For production, use a proper database like Neon, Supabase, or MongoDB Atlas
+const webhookStore: Array<{
   id: number;
   headers: unknown;
   body: unknown;
   query: unknown;
   created_at: string;
-};
+}> = [];
+
+let nextId = 1;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // อนุญาต CORS
@@ -32,51 +23,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await ensureWebhookTable();
-
     // รับ webhook (POST)
     if (req.method === 'POST') {
       const headers = req.headers ?? {};
       const body = req.body ?? {};
       const query = req.query ?? {};
-      const headersJson = JSON.stringify(headers);
-      const bodyJson = JSON.stringify(body);
-      const queryJson = JSON.stringify(query);
 
-      const result = await sql<{ id: number }>`
-        INSERT INTO webhook_entries (headers, body, query)
-        VALUES (${headersJson}::jsonb, ${bodyJson}::jsonb, ${queryJson}::jsonb)
-        RETURNING id
-      `;
+      const entry = {
+        id: nextId++,
+        headers,
+        body,
+        query,
+        created_at: new Date().toISOString()
+      };
+
+      webhookStore.push(entry);
 
       return res.status(200).json({
         success: true,
         message: 'Webhook received',
-        id: result.rows[0].id
+        id: entry.id
       });
     }
 
     // ดู webhook ที่ได้รับ (GET)
     if (req.method === 'GET') {
-      // Get limit from query parameter, default to 10, max 50
-      const limit = Math.min(parseInt(String(req.query.limit || '10')), 50);
+      // Get limit from query parameter, default to 10, max 100
+      const limit = Math.min(parseInt(String(req.query.limit || '10')), 100);
       
-      // Count total entries
-      const countResult = await sql`SELECT COUNT(*) as total FROM webhook_entries`;
-      const total = parseInt(String(countResult.rows[0].total));
+      const total = webhookStore.length;
       
-      const result = await sql<WebhookRow>`
-        SELECT id, body, created_at
-        FROM webhook_entries
-        ORDER BY id DESC
-        LIMIT ${limit}
-      `;
-
-      const webhooks = result.rows.map((row) => ({
-        id: row.id,
-        body: row.body,
-        timestamp: row.created_at
-      }));
+      // Get latest webhooks (reverse order)
+      const webhooks = webhookStore
+        .slice(-limit)
+        .reverse()
+        .map((entry) => ({
+          id: entry.id,
+          body: entry.body,
+          timestamp: entry.created_at
+        }));
 
       return res.status(200).json({
         success: true,
@@ -88,10 +73,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
   } catch (error) {
-    console.error('Database error:', error);
+    console.error('Error:', error);
     return res.status(500).json({
       success: false,
-      error: 'Database error',
+      error: 'Server error',
       details: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString()
     });
