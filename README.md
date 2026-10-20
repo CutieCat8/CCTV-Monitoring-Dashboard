@@ -25,6 +25,30 @@ CCTV Monitoring Dashboard เป็นเว็บแอปพลิเคชั
 
 > **สถานะโครงการ:** ต้นแบบ (prototype) ภาพกล้องสดใช้สตรีมสาธารณะของ Caltrans เพื่อสาธิตการทำงาน ส่วนข้อมูลเหตุการณ์และสถิติเป็นข้อมูลจำลอง รอเชื่อมต่อกับ Backend และฐานข้อมูลจริง
 
+## ภาพตัวอย่าง
+
+### Dashboard (เจ้าหน้าที่)
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/officer-live-monitoring.png" alt="Live Monitoring"/><br/><sub><b>Live Monitoring</b> – สตรีมกล้องสดและปริมาณจราจรรายกล้อง</sub></td>
+    <td width="50%"><img src="docs/screenshots/officer-dashboard.png" alt="Dashboard"/><br/><sub><b>Dashboard</b> – ภาพรวมกล้อง การฝ่าฝืน และกราฟจราจร</sub></td>
+  </tr>
+</table>
+
+### Citizen Portal (ประชาชน)
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/citizen-overview.png" alt="ภาพรวมเมือง"/><br/><sub><b>ภาพรวมเมือง</b> – PM2.5 สภาพอากาศ และสถานะความปลอดภัย</sub></td>
+    <td width="50%"><img src="docs/screenshots/citizen-map-aqi.png" alt="แผนที่ AQI"/><br/><sub><b>แผนที่เมือง</b> – โหมดคุณภาพอากาศ (AQI) รายสถานี</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/citizen-announcements.png" alt="ประกาศข่าว"/><br/><sub><b>ประกาศข่าว</b> – แยกระดับสำคัญ / ปานกลาง</sub></td>
+    <td width="50%"><img src="docs/screenshots/citizen-report.png" alt="ร้องเรียน"/><br/><sub><b>ร้องเรียน</b> – แจ้งปัญหาและติดตามสถานะ</sub></td>
+  </tr>
+</table>
+
 ## คุณสมบัติ
 
 ### สำหรับเจ้าหน้าที่ (Dashboard)
