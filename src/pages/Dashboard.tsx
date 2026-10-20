@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Video, AlertTriangle, TrendingUp, Activity, Users, Clock, MapPin } from 'lucide-react';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { cameras, mapEquipmentNameToCameraName } from '../data/cameras';
 import { violationTypes, Event } from '../data/events';
 import { generateTrafficData } from '../data/trafficData';
@@ -106,9 +105,7 @@ export function Dashboard() {
   const violationsByType = Object.entries(violationTypes).map(([type, info]) => ({
     name: info.label,
     value: events.filter(e => e.type === type).length,
-    color: type === 'no-helmet' ? '#f97316' : 
-           type === 'illegal-parking' ? '#ef4444' :
-           type === 'red-light' ? '#dc2626' : '#eab308'
+    color: ({ 'no-helmet': '#171717', 'illegal-parking': '#525252', 'red-light': '#a3a3a3', 'wrong-lane': '#d6d6d1' } as Record<string, string>)[type]
   }));
   
   // Traffic trend (last 7 days)
@@ -132,249 +129,173 @@ export function Dashboard() {
     { hour: '18:00', vehicles: 920 },
   ];
 
+  const axis = { fontSize: 11, fill: '#a3a3a3' };
+  const tooltipStyle = {
+    background: '#fff',
+    border: '1px solid #e8e8e4',
+    borderRadius: 8,
+    boxShadow: 'none',
+    fontSize: 12,
+  };
+  const formatTime = (date: Date) =>
+    date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+  const stats = [
+    { label: 'Cameras', value: String(totalCameras), note: `${activeCameras} online`, dot: 'bg-emerald-500' },
+    { label: 'Violations', value: loading ? '–' : String(totalViolations), note: 'From API' },
+    { label: 'Vehicles', value: '127.5K', note: '+8.2% vs yesterday' },
+    { label: 'Avg response', value: '3.2m', note: 'Per incident' },
+  ];
+
+  const Section = ({ title, children, className = '' }: { title: string; children: React.ReactNode; className?: string }) => (
+    <section className={className}>
+      <h3 className="text-sm font-light tracking-tight text-neutral-900 mb-5">{title}</h3>
+      {children}
+    </section>
+  );
+
   return (
-    <div className="p-6 overflow-auto h-full">
-      <div className="max-w-[1600px] mx-auto">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">System Overview</h2>
-          <p className="text-gray-500 mt-1">Real-time monitoring and analytics dashboard</p>
-        </div>
-        
-        {/* Top Stats Cards */}
-        <div className="grid grid-cols-4 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Cameras</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{totalCameras}</p>
-                <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
-                  <Activity className="w-4 h-4" />
-                  {activeCameras} online
-                </p>
-              </div>
-              <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center">
-                <Video className="w-7 h-7 text-blue-600" />
-              </div>
+    <div className="h-full overflow-auto bg-[#f7f7f5] text-neutral-900">
+      <div className="max-w-6xl mx-auto px-10 py-10">
+        <header className="mb-10">
+          <h1 className="text-2xl font-light tracking-tight">Overview</h1>
+          <p className="text-sm text-neutral-400 mt-1">Real-time monitoring and analytics</p>
+        </header>
+
+        {/* Stats */}
+        <dl className="grid grid-cols-4 mb-14">
+          {stats.map((s, i) => (
+            <div key={s.label} className={i > 0 ? 'pl-8 border-l border-neutral-200/80' : ''}>
+              <dt className="text-xs text-neutral-400">{s.label}</dt>
+              <dd className="mt-2 text-4xl font-extralight tracking-tight tabular-nums">{s.value}</dd>
+              <p className="mt-1 text-xs text-neutral-400 flex items-center gap-1.5">
+                {s.dot && <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />}
+                {s.note}
+              </p>
             </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Violations</p>
-                {loading ? (
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="w-8 h-8 border-4 border-gray-200 border-t-red-600 rounded-full animate-spin"></div>
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-3xl font-bold text-gray-900 mt-2">{totalViolations}</p>
-                    <p className="text-sm text-red-600 mt-2">From API</p>
-                  </>
-                )}
-              </div>
-              <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-7 h-7 text-red-600" />
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Vehicles</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">127.5K</p>
-                <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
-                  <TrendingUp className="w-4 h-4" />
-                  +8.2% vs yesterday
-                </p>
-              </div>
-              <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center">
-                <Users className="w-7 h-7 text-green-600" />
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Avg Response Time</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">3.2m</p>
-                <p className="text-sm text-blue-600 mt-2">Per incident</p>
-              </div>
-              <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center">
-                <Clock className="w-7 h-7 text-purple-600" />
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Charts Row 1 */}
-        <div className="grid grid-cols-3 gap-6 mb-6">
-          {/* Traffic Trend */}
-          <div className="col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Weekly Traffic Trend</h3>
-            <ResponsiveContainer width="100%" height={280}>
+          ))}
+        </dl>
+
+        {/* Row 1 */}
+        <div className="grid grid-cols-3 gap-14 mb-14">
+          <Section title="Weekly traffic" className="col-span-2">
+            <ResponsiveContainer width="100%" height={260}>
               <LineChart data={trafficTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="#9ca3af" />
-                <YAxis tick={{ fontSize: 12 }} stroke="#9ca3af" />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                  }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="vehicles" 
-                  stroke="#3b82f6" 
-                  strokeWidth={3}
-                  dot={{ fill: '#3b82f6', r: 4 }}
+                <CartesianGrid vertical={false} stroke="#e8e8e4" />
+                <XAxis dataKey="day" tick={axis} axisLine={false} tickLine={false} />
+                <YAxis tick={axis} axisLine={false} tickLine={false} width={40} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: '#d6d6d1' }} />
+                <Line
+                  type="monotone"
+                  dataKey="vehicles"
+                  stroke="#171717"
+                  strokeWidth={1.5}
+                  dot={false}
+                  activeDot={{ r: 4, fill: '#171717', stroke: '#fff', strokeWidth: 2 }}
                 />
               </LineChart>
             </ResponsiveContainer>
-          </div>
-          
-          {/* Violations by Type */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Violations by Type</h3>
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={violationsByType}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {violationsByType.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        
-        {/* Charts Row 2 */}
-        <div className="grid grid-cols-3 gap-6 mb-6">
-          {/* Top Cameras by Traffic */}
-          <div className="col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Top 5 Cameras by Traffic Volume</h3>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={allTrafficData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis type="number" tick={{ fontSize: 12 }} stroke="#9ca3af" />
-                <YAxis 
-                  dataKey="cameraName" 
-                  type="category" 
-                  width={200}
-                  tick={{ fontSize: 11 }} 
-                  stroke="#9ca3af" 
-                />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                  }}
-                />
-                <Bar dataKey="total" fill="#10b981" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          
-          {/* Peak Hours */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Peak Hours Today</h3>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={peakHoursData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="hour" tick={{ fontSize: 11 }} stroke="#9ca3af" />
-                <YAxis tick={{ fontSize: 12 }} stroke="#9ca3af" />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                  }}
-                />
-                <Bar dataKey="vehicles" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        
-        {/* Recent Violations */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Recent Violations</h3>
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
-                <p className="text-gray-500">Loading violations...</p>
+          </Section>
+
+          <Section title="Violations by type">
+            <div className="relative">
+              <ResponsiveContainer width="100%" height={170}>
+                <PieChart>
+                  <Pie
+                    data={violationsByType}
+                    dataKey="value"
+                    innerRadius={54}
+                    outerRadius={78}
+                    paddingAngle={2}
+                    stroke="none"
+                  >
+                    {violationsByType.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-2xl font-extralight tabular-nums">{totalViolations}</span>
+                <span className="text-[11px] text-neutral-400">total</span>
               </div>
             </div>
-          ) : events.length === 0 ? (
-            <div className="flex items-center justify-center h-64">
-              <p className="text-gray-500">No violations found</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Time</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Violation Type</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Location</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {events.slice(0, 5).map((event) => {
-                    const violationType = violationTypes[event.type];
-                    const formatTime = (date: Date) => {
-                      return date.toLocaleTimeString('th-TH', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      });
-                    };
-                    
-                    return (
-                      <tr key={event.id} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="py-3 px-4 text-sm text-gray-900">
-                          {formatTime(event.timestamp)}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${violationType.color}`}>
-                            {violationType.label}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4" />
-                            {event.cameraName}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">
-                            Under Review
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+            <ul className="mt-5 space-y-2">
+              {violationsByType.map((v) => (
+                <li key={v.name} className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-2 text-neutral-600">
+                    <span className="w-2 h-2 rounded-full" style={{ background: v.color }} />
+                    {v.name}
+                  </span>
+                  <span className="tabular-nums text-neutral-400">{v.value}</span>
+                </li>
+              ))}
+            </ul>
+          </Section>
         </div>
+
+        {/* Row 2 */}
+        <div className="grid grid-cols-3 gap-14 mb-14">
+          <Section title="Top 5 cameras by traffic" className="col-span-2">
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={allTrafficData} layout="vertical" barCategoryGap="35%">
+                <CartesianGrid horizontal={false} stroke="#e8e8e4" />
+                <XAxis type="number" tick={axis} axisLine={false} tickLine={false} />
+                <YAxis dataKey="cameraName" type="category" width={170} tick={axis} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
+                <Bar dataKey="total" fill="#171717" radius={[0, 2, 2, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Section>
+
+          <Section title="Peak hours today">
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={peakHoursData} barCategoryGap="30%">
+                <CartesianGrid vertical={false} stroke="#e8e8e4" />
+                <XAxis dataKey="hour" tick={axis} axisLine={false} tickLine={false} />
+                <YAxis tick={axis} axisLine={false} tickLine={false} width={32} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
+                <Bar dataKey="vehicles" fill="#d6d6d1" radius={[2, 2, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Section>
+        </div>
+
+        {/* Recent violations */}
+        <Section title="Recent violations">
+          {loading ? (
+            <p className="py-10 text-sm font-light text-neutral-400">Loading…</p>
+          ) : events.length === 0 ? (
+            <p className="py-10 text-sm font-light text-neutral-400">No violations found</p>
+          ) : (
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-neutral-200/80 text-[11px] uppercase tracking-[0.14em] text-neutral-400">
+                  <th className="py-3 pr-4 font-normal w-24">Time</th>
+                  <th className="py-3 pr-4 font-normal">Violation</th>
+                  <th className="py-3 pr-4 font-normal">Location</th>
+                  <th className="py-3 font-normal text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {events.slice(0, 5).map((event) => (
+                  <tr key={event.id} className="border-b border-neutral-100 hover:bg-white/70 transition-colors">
+                    <td className="py-3.5 pr-4 text-sm tabular-nums text-neutral-500">{formatTime(event.timestamp)}</td>
+                    <td className="py-3.5 pr-4 text-sm text-neutral-800">{violationTypes[event.type].label}</td>
+                    <td className="py-3.5 pr-4 text-sm text-neutral-500">{event.cameraName}</td>
+                    <td className="py-3.5 text-right text-xs text-neutral-400">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                        Under review
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Section>
       </div>
     </div>
   );
