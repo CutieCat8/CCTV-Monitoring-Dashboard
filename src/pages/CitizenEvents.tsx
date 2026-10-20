@@ -1,5 +1,6 @@
 import { Calendar, MapPin, Users, Clock, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
 
 type EventCategory = 'all' | 'festival' | 'market' | 'sports' | 'culture';
 
@@ -20,6 +21,7 @@ interface Event {
 }
 
 export function CitizenEvents() {
+  const { isDarkMode } = useTheme();
   const [selectedCategory, setSelectedCategory] = useState<EventCategory>('all');
 
   const events: Event[] = [
@@ -138,8 +140,8 @@ export function CitizenEvents() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white mb-2">อีเวนท์และกิจกรรม</h1>
-        <p className="text-gray-400 text-sm">
+        <h1 className={`text-3xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>อีเวนท์และกิจกรรม</h1>
+        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
           งานและกิจกรรมทั้งหมดในเมืองใหม่
         </p>
       </div>
@@ -153,7 +155,9 @@ export function CitizenEvents() {
             className={`px-5 py-2 rounded-lg font-medium transition-all text-sm ${
               selectedCategory === category.id
                 ? 'bg-orange-600 text-white'
-                : 'bg-neutral-900 text-gray-400 hover:bg-neutral-800 hover:text-white border border-neutral-800'
+                : isDarkMode
+                  ? 'bg-neutral-900 text-gray-400 hover:bg-neutral-800 hover:text-white border border-neutral-800'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 border border-gray-200'
             }`}
           >
             {category.label}
@@ -166,10 +170,18 @@ export function CitizenEvents() {
         {filteredEvents.map((event) => (
           <div
             key={event.id}
-            className="bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-2xl overflow-hidden border border-neutral-800 hover:border-neutral-700 transition-all group"
+            className={`rounded-2xl overflow-hidden border transition-all group ${
+              isDarkMode
+                ? 'bg-gradient-to-br from-neutral-900 to-neutral-950 border-neutral-800 hover:border-neutral-700'
+                : 'bg-gradient-to-br from-white to-gray-50 border-gray-200 hover:border-gray-300'
+            }`}
           >
             {/* Event Image/Emoji */}
-            <div className="h-44 bg-gradient-to-br from-neutral-800 to-neutral-900 flex items-center justify-center relative">
+            <div className={`h-44 flex items-center justify-center relative ${
+              isDarkMode
+                ? 'bg-gradient-to-br from-neutral-800 to-neutral-900'
+                : 'bg-gradient-to-br from-gray-100 to-gray-200'
+            }`}>
               <div className="text-7xl">{event.emoji}</div>
               {/* Status Badge - Left */}
               <div className="absolute top-4 left-4">
@@ -189,38 +201,42 @@ export function CitizenEvents() {
 
             {/* Event Content */}
             <div className="p-5">
-              <h3 className="text-white font-bold text-base mb-2 line-clamp-2 min-h-[3rem]">
+              <h3 className={`font-bold text-base mb-2 line-clamp-2 min-h-[3rem] ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                 {event.title}
               </h3>
 
-              <p className="text-gray-400 text-sm leading-relaxed mb-4 line-clamp-2 min-h-[2.5rem]">
+              <p className={`text-sm leading-relaxed mb-4 line-clamp-2 min-h-[2.5rem] ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 {event.description}
               </p>
 
               <div className="space-y-2 text-sm mb-4">
-                <div className="flex items-center gap-2 text-gray-400">
+                <div className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   <Calendar className="w-4 h-4 flex-shrink-0" />
                   <span className="text-xs">{event.date}</span>
                 </div>
 
-                <div className="flex items-center gap-2 text-gray-400">
+                <div className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   <Clock className="w-4 h-4 flex-shrink-0" />
                   <span className="text-xs">{event.time}</span>
                 </div>
 
-                <div className="flex items-center gap-2 text-gray-400">
+                <div className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   <MapPin className="w-4 h-4 flex-shrink-0" />
                   <span className="text-xs">{event.location}</span>
                 </div>
 
-                <div className="flex items-center gap-2 text-gray-400">
+                <div className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   <Users className="w-4 h-4 flex-shrink-0" />
                   <span className="text-xs">{event.attendees}</span>
                 </div>
               </div>
 
               {/* View Details Button */}
-              <button className="w-full bg-transparent hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-white py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-sm font-medium">
+              <button className={`w-full bg-transparent py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-sm font-medium border ${
+                isDarkMode
+                  ? 'hover:bg-neutral-800 border-neutral-800 hover:border-neutral-700 text-white'
+                  : 'hover:bg-gray-100 border-gray-200 hover:border-gray-300 text-gray-800'
+              }`}>
                 <ExternalLink className="w-4 h-4" />
                 ดูรายละเอียด
               </button>

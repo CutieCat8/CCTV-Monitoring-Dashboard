@@ -172,15 +172,21 @@ export function CitizenReport() {
 
           {/* Image Upload */}
           <div className="mb-6">
-            <label className="text-sm text-gray-400 mb-2 block">แนบรูปภาพ (ไม่บังคับ)</label>
-            <div className="border-2 border-dashed border-neutral-800 rounded-xl p-8 text-center hover:border-neutral-700 transition-colors cursor-pointer bg-neutral-950">
-              <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Upload className="w-8 h-8 text-gray-500" />
+            <label className={`text-sm mb-2 block ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>แนบรูปภาพ (ไม่บังคับ)</label>
+            <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${
+              isDarkMode
+                ? 'border-neutral-800 hover:border-neutral-700 bg-neutral-950'
+                : 'border-gray-300 hover:border-gray-400 bg-white'
+            }`}>
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${
+                isDarkMode ? 'bg-neutral-900' : 'bg-gray-100'
+              }`}>
+                <Upload className={`w-8 h-8 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`} />
               </div>
-              <div className="text-white text-sm font-medium mb-1">
+              <div className={`text-sm font-medium mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                 คลิกที่นี่เพื่ออัพโหลดรูปภาพ
               </div>
-              <div className="text-gray-500 text-xs">PNG, JPG ขนาดไม่เกิน 5MB</div>
+              <div className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>PNG, JPG ขนาดไม่เกิน 5MB</div>
             </div>
           </div>
 
@@ -198,8 +204,12 @@ export function CitizenReport() {
         </div>
 
         {/* Right Panel - My Reports */}
-        <div className="flex-1 bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-2xl border border-neutral-800 p-6 overflow-auto">
-          <h2 className="text-xl font-bold text-white mb-6">เรื่องร้องเรียนของฉัน</h2>
+        <div className={`flex-1 rounded-2xl border p-6 overflow-auto ${
+          isDarkMode
+            ? 'bg-gradient-to-br from-neutral-900 to-neutral-950 border-neutral-800'
+            : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
+        }`}>
+          <h2 className={`text-xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>เรื่องร้องเรียนของฉัน</h2>
 
           <div className="space-y-3 mb-8">
             {myReports.map((report) => {
@@ -214,11 +224,15 @@ export function CitizenReport() {
               return (
                 <div
                   key={report.id}
-                  className="bg-neutral-950 border border-neutral-800 rounded-xl p-4 hover:border-neutral-700 transition-colors"
+                  className={`border rounded-xl p-4 transition-colors ${
+                    isDarkMode
+                      ? 'bg-neutral-950 border-neutral-800 hover:border-neutral-700'
+                      : 'bg-white border-gray-200 hover:border-gray-300'
+                  }`}
                 >
                   {/* Header */}
                   <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <div className={`flex items-center gap-2 text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-600'}`}>
                       <Icon className="w-4 h-4" />
                       <span>
                         {report.type === 'streetlight'
@@ -234,10 +248,10 @@ export function CitizenReport() {
                   </div>
 
                   {/* Title */}
-                  <h3 className="text-white font-medium mb-3">{report.title}</h3>
+                  <h3 className={`font-medium mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{report.title}</h3>
 
                   {/* Footer */}
-                  <div className="flex items-center justify-between text-xs text-gray-500">
+                  <div className={`flex items-center justify-between text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-600'}`}>
                     <div className="flex items-center gap-2">
                       <MapPin className="w-3 h-3" />
                       <span>{report.location}</span>
@@ -250,20 +264,20 @@ export function CitizenReport() {
           </div>
 
           {/* Legend */}
-          <div className="bg-neutral-950 border border-neutral-800 rounded-xl p-4">
-            <h4 className="text-white font-semibold mb-3 text-sm">สถานะ</h4>
+          <div className={`border rounded-xl p-4 ${isDarkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-gray-200'}`}>
+            <h4 className={`font-semibold mb-3 text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>สถานะ</h4>
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
-                <span className="text-gray-400">รับเรื่องแล้ว</span>
+                <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>รับเรื่องแล้ว</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-orange-400 rounded-full"></div>
-                <span className="text-gray-400">กำลังดำเนินการ</span>
+                <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>กำลังดำเนินการ</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                <span className="text-gray-400">เสร็จสิ้น</span>
+                <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>เสร็จสิ้น</span>
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { MapPin, Clock, AlertCircle, AlertTriangle, Info, CheckCircle } from 'lucide-react';
+import { MapPin, Clock, AlertCircle, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
 type AnnouncementType = 'emergency' | 'warning' | 'info';
@@ -107,25 +107,36 @@ export function CitizenAnnouncements() {
     }
   };
 
+  const getLightTypeClass = (type: AnnouncementType) => {
+    switch (type) {
+      case 'emergency':
+        return 'bg-red-100 border-red-300';
+      case 'warning':
+        return 'bg-[#fff8e1] border-[#f0dba8]';
+      case 'info':
+        return 'bg-[#e0e0e0] border-[#c7c7c7]';
+    }
+  };
+
   const getIconColor = (type: AnnouncementType) => {
     switch (type) {
       case 'emergency':
-        return 'bg-red-600 text-white';
+        return isDarkMode ? 'bg-red-600 text-white' : 'bg-red-100 text-red-700';
       case 'warning':
-        return 'bg-yellow-600 text-white';
+        return isDarkMode ? 'bg-yellow-600 text-white' : 'bg-amber-100 text-amber-700';
       case 'info':
-        return 'bg-neutral-700 text-white';
+        return isDarkMode ? 'bg-neutral-700 text-white' : 'bg-gray-200 text-gray-700';
     }
   };
 
   const getBadgeColor = (type: AnnouncementType) => {
     switch (type) {
       case 'emergency':
-        return 'bg-red-600 text-white';
+        return isDarkMode ? 'bg-red-600 text-white' : 'bg-red-100 text-red-700';
       case 'warning':
-        return 'bg-yellow-600 text-white';
+        return isDarkMode ? 'bg-yellow-600 text-white' : 'bg-amber-100 text-amber-800';
       case 'info':
-        return 'bg-neutral-600 text-white';
+        return isDarkMode ? 'bg-neutral-600 text-white' : 'bg-gray-300 text-gray-700';
     }
   };
 
@@ -155,9 +166,11 @@ export function CitizenAnnouncements() {
         {announcements.map((announcement) => (
           <div
             key={announcement.id}
-            className={`bg-gradient-to-r ${getTypeColor(
-              announcement.type
-            )} rounded-2xl p-6 border relative hover:border-opacity-80 transition-all`}
+            className={`${isDarkMode ? 'bg-gradient-to-r' : ''} ${
+              isDarkMode ? getTypeColor(announcement.type) : getLightTypeClass(announcement.type)
+            } rounded-2xl p-6 border relative transition-all ${
+              isDarkMode ? 'hover:border-opacity-80' : 'hover:shadow-sm'
+            }`}
           >
             <div className="flex gap-4">
               {/* Icon */}
