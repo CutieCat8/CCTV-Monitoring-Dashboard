@@ -32,7 +32,7 @@ export const events: Event[] = [
     id: 1,
     type: 'no-helmet',
     cameraId: 1,
-    cameraName: 'ถนนท่าแพ',
+    cameraName: 'US-101 Candlestick Park',
     timestamp: new Date(Date.now() - 5 * 60000),
     thumbnail: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop'
   },
@@ -56,7 +56,7 @@ export const events: Event[] = [
     id: 4,
     type: 'wrong-lane',
     cameraId: 9,
-    cameraName: 'สี่แยกเมญ่า 1',
+    cameraName: 'SR-99 Fremont St',
     timestamp: new Date(Date.now() - 25 * 60000),
     thumbnail: 'https://images.unsplash.com/photo-1486299267070-83823f5448dd?w=400&h=300&fit=crop'
   },
@@ -72,7 +72,7 @@ export const events: Event[] = [
     id: 6,
     type: 'illegal-parking',
     cameraId: 2,
-    cameraName: 'ถนนมูลเมือง',
+    cameraName: 'I-110 Avenue 26',
     timestamp: new Date(Date.now() - 45 * 60000),
     thumbnail: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop'
   },
