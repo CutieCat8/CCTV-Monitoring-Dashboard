@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { AlertTriangle, Calendar, Filter, Search, Download, Eye } from 'lucide-react';
+import { Calendar, Search, Download } from 'lucide-react';
 import { Event, violationTypes } from '../data/events';
 import { EventDetailPanel } from '../components/EventDetailPanel';
+import { FilterDropdown } from '../components/FilterDropdown';
 import { getWebhooks, base64ToDataUrl, WebhookEntry } from '../utils/api';
 import { cameras, mapEquipmentNameToCameraName } from '../data/cameras';
 
@@ -122,182 +123,148 @@ export function EventsPage() {
     });
   };
 
+  const stats = [
+    { label: 'Total events', value: events.length, note: 'Today' },
+    ...Object.entries(violationTypes).slice(0, 3).map(([type, info]) => ({
+      label: info.label,
+      value: events.filter((e) => e.type === type).length,
+      note: 'Cases',
+    })),
+  ];
+
+  const filters = [
+    { key: 'all', label: 'All', count: events.length },
+    ...Object.entries(violationTypes).map(([key, info]) => ({
+      key,
+      label: info.label,
+      count: events.filter((e) => e.type === key).length,
+    })),
+  ];
+
   return (
-    <div className="p-6 overflow-auto h-full">
-      <div className="max-w-[1400px] mx-auto">
+    <div className="h-full overflow-auto bg-[#f7f7f5] text-neutral-900">
+      <div className="max-w-6xl mx-auto px-10 py-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <header className="flex items-end justify-between mb-10">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Detected Events</h2>
-            <p className="text-gray-500 mt-1">
-              {loading ? 'Loading events...' : `All traffic violations and incidents (${events.length} total)`}
+            <h1 className="text-2xl font-light tracking-tight">Events</h1>
+            <p className="text-sm text-neutral-400 mt-1">
+              {loading ? 'Loading…' : `All traffic violations and incidents · ${events.length} total`}
             </p>
             {error && (
-              <p className="text-sm text-orange-600 mt-1">⚠️ {error}</p>
+              <p className="text-xs text-amber-600 mt-2 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                {error}
+              </p>
             )}
           </div>
-          
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              <Download className="w-4 h-4" />
-              Export Report
-            </button>
-          </div>
-        </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="text-sm text-gray-600">Total Events</div>
-            <div className="text-2xl font-bold text-gray-900 mt-1">{events.length}</div>
-            <div className="text-xs text-gray-500 mt-1">Today</div>
-          </div>
-          
-          {Object.entries(violationTypes).slice(0, 3).map(([type, info]) => {
-            const count = events.filter(e => e.type === type).length;
-            return (
-              <div key={type} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <div className="text-sm text-gray-600">{info.label}</div>
-                <div className="text-2xl font-bold text-gray-900 mt-1">{count}</div>
-                <div className="text-xs text-gray-500 mt-1">Cases</div>
-              </div>
-            );
-          })}
-        </div>
+          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-neutral-900 text-white text-sm hover:bg-neutral-700 transition-colors">
+            <Download className="w-4 h-4" />
+            Export report
+          </button>
+        </header>
 
-        {/* Filters and Search */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="flex items-center gap-4">
-            <div className="flex-1 relative">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        {/* Stats */}
+        <dl className="grid grid-cols-4 mb-12">
+          {stats.map((s, i) => (
+            <div key={s.label} className={i > 0 ? 'pl-8 border-l border-neutral-200/80' : ''}>
+              <dt className="text-xs text-neutral-400">{s.label}</dt>
+              <dd className="mt-2 text-4xl font-extralight tracking-tight tabular-nums">{s.value}</dd>
+              <p className="mt-1 text-xs text-neutral-400">{s.note}</p>
+            </div>
+          ))}
+        </dl>
+
+        {/* Filters */}
+        <div className="flex items-end justify-between gap-8 border-b border-neutral-200/80 mb-2">
+          <div className="pb-2">
+            <FilterDropdown
+              value={filterType}
+              options={filters}
+              onChange={setFilterType}
+              ariaLabel="Filter by violation type"
+            />
+          </div>
+
+          <div className="flex items-center gap-6 pb-2 shrink-0">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-0 top-1/2 -translate-y-1/2 text-neutral-400" />
               <input
                 type="text"
-                placeholder="Search by camera location..."
+                placeholder="Search camera"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="bg-transparent text-sm pl-7 pr-2 py-1 w-44 border-b border-transparent focus:border-neutral-900 focus:outline-none placeholder-neutral-400 transition-colors"
               />
             </div>
-            
-            <div className="flex items-center gap-2">
-              <Filter className="w-5 h-5 text-gray-500" />
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                aria-label="Filter by violation type"
-              >
-                <option value="all">All Types</option>
-                {Object.entries(violationTypes).map(([type, info]) => (
-                  <option key={type} value={type}>{info.label}</option>
-                ))}
-              </select>
-            </div>
-            
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              <Calendar className="w-4 h-4" />
-              Date Range
+            <button className="flex items-center gap-1.5 text-sm text-neutral-400 hover:text-neutral-900 transition-colors">
+              <Calendar className="w-4 h-4" strokeWidth={1.5} />
+              Date range
             </button>
           </div>
         </div>
 
-        {/* Events List */}
-        <div className="space-y-6">
+        {/* Events list */}
+        <div>
           {Object.entries(groupedEvents).map(([date, dateEvents]) => (
-            <div key={date}>
-              <div className="flex items-center gap-3 mb-4">
-                <h3 className="font-semibold text-gray-900">{date}</h3>
-                <div className="flex-1 h-px bg-gray-200"></div>
-                <span className="text-sm text-gray-500">{dateEvents.length} events</span>
-              </div>
-              
-              <div className="grid grid-cols-1 gap-4">
+            <section key={date} className="pt-8">
+              <h3 className="flex items-baseline gap-3 mb-3 text-[11px] uppercase tracking-[0.14em] text-neutral-400">
+                {date}
+                <span className="tabular-nums">{dateEvents.length}</span>
+              </h3>
+
+              <ul>
                 {dateEvents.map((event) => {
                   const violationType = violationTypes[event.type];
-                  
+
                   return (
-                    <div
-                      key={event.id}
-                      className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => setSelectedEvent(event)}
-                    >
-                      <div className="flex items-start gap-4">
-                        {/* Thumbnail */}
+                    <li key={event.id}>
+                      <button
+                        onClick={() => setSelectedEvent(event)}
+                        className="w-full text-left flex items-center gap-6 py-4 border-b border-neutral-100 hover:bg-white/70 transition-colors"
+                      >
                         {event.thumbnail ? (
                           <img
                             src={event.thumbnail}
-                            alt="Event snapshot"
-                            className="w-48 h-32 flex-shrink-0 rounded-lg overflow-hidden object-cover"
+                            alt=""
+                            className="w-28 h-[72px] shrink-0 rounded-lg object-cover bg-neutral-200"
                           />
                         ) : (
-                          <div className="relative w-48 h-32 flex-shrink-0 rounded-lg overflow-hidden bg-gray-200 flex items-center justify-center">
-                            <div className="w-10 h-10 border-4 border-gray-300 border-t-gray-500 rounded-full animate-spin"></div>
-                          </div>
+                          <div className="w-28 h-[72px] shrink-0 rounded-lg bg-neutral-100" />
                         )}
-                        
-                        {/* Content */}
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <div className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mb-2 ${violationType.color}`}>
-                                {violationType.label}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                Event ID: EV-{String(event.id).padStart(6, '0')}
-                              </div>
-                            </div>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedEvent(event);
-                              }}
-                              className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            >
-                              <Eye className="w-4 h-4" />
-                              <span className="text-sm">View Details</span>
-                            </button>
-                          </div>
-                          
-                          <div className="grid grid-cols-3 gap-4">
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <Calendar className="w-4 h-4" />
-                              <span>{formatTime(event.timestamp)}</span>
-                            </div>
-                            
-                            <div className="flex items-start gap-2 text-sm text-gray-600">
-                              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                              <span className="line-clamp-1">{event.cameraName}</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full font-medium">
-                                Under Review
-                              </span>
-                            </div>
-                          </div>
+
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[15px] text-neutral-900">{violationType.label}</p>
+                          <p className="text-xs text-neutral-400 mt-1 font-mono">
+                            EV-{String(event.id).padStart(6, '0')}
+                          </p>
                         </div>
-                      </div>
-                    </div>
+
+                        <p className="w-56 text-sm text-neutral-500 truncate">{event.cameraName}</p>
+                        <p className="w-14 text-sm tabular-nums text-neutral-500">{formatTime(event.timestamp)}</p>
+
+                        <span className="w-28 flex items-center justify-end gap-1.5 text-xs text-neutral-400">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                          Under review
+                        </span>
+                      </button>
+                    </li>
                   );
                 })}
-              </div>
-            </div>
+              </ul>
+            </section>
           ))}
         </div>
-        
+
         {filteredEvents.length === 0 && (
-          <div className="text-center py-12">
-            <AlertTriangle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No events found matching your filters</p>
-          </div>
+          <p className="py-16 text-center text-sm font-light text-neutral-400">
+            {loading ? '' : 'No events match your filters'}
+          </p>
         )}
       </div>
-      
-      {/* Event Detail Slide-in Panel */}
-      <EventDetailPanel 
-        event={selectedEvent}
-        onClose={() => setSelectedEvent(null)}
-      />
+
+      <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
     </div>
   );
 }
