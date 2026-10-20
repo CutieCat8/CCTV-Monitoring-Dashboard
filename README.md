@@ -36,6 +36,16 @@ CCTV Monitoring Dashboard เป็นเว็บแอปพลิเคชั
   </tr>
 </table>
 
+<div align="center">
+  <table>
+    <tr>
+      <td width="50%"><img src="docs/screenshots/officer-events.png" alt="Events"/><br/><sub><b>Events</b> – รายการเหตุการณ์และตัวกรอง (ยังไม่มีข้อมูลจริง)</sub></td>
+    </tr>
+  </table>
+</div>
+
+> **หมายเหตุ:** บางหน้าของ Dashboard เจ้าหน้าที่ เช่น Events และตัวเลขการฝ่าฝืนใน Dashboard จะยังไม่มีข้อมูลจริง (แสดงเป็น 0 หรือขึ้นข้อความ "Failed to load events from API") เพราะยังไม่ได้เชื่อมต่อโมเดล YOLO สำหรับตรวจจับและติดตามรถ รวมถึงตรวจจับการฝ่าฝืนต่างๆ ตัวเลขจราจรบางส่วนจึงเป็นข้อมูลจำลอง
+
 ### Citizen Portal (ประชาชน)
 
 <table>
