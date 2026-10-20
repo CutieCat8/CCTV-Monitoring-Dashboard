@@ -186,3 +186,105 @@
 html {
   font-size: var(--font-size);
 }
+
+.announcement-card-emergency {
+  background-color: #fde0dc;
+  border-color: #fca5a5;
+}
+
+.announcement-card-warning {
+  background-color: #fff8e1;
+  border-color: #f0dba8;
+}
+
+.announcement-card-info {
+  background-color: #e0e0e0;
+  border-color: #c7c7c7;
+}
+
+.aqi-pin-wrapper {
+  background: transparent;
+  border: 0;
+}
+
+.aqi-pin {
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.35);
+  transform: scale(1);
+  transition: transform 120ms ease;
+}
+
+.aqi-pin:hover {
+  transform: scale(1.06);
+}
+
+.aqi-pin-label {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.aqi-pin-selected {
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.35), 0 8px 20px rgba(15, 23, 42, 0.45);
+}
+
+.aqi-level-good {
+  background-color: #16a34a;
+}
+
+.aqi-level-moderate {
+  background-color: #ca8a04;
+}
+
+.aqi-level-sensitive {
+  background-color: #ea580c;
+}
+
+.aqi-level-unhealthy {
+  background-color: #dc2626;
+}
+
+.aqi-level-very-unhealthy {
+  background-color: #7c3aed;
+}
+
+.aqi-level-hazardous {
+  background-color: #7f1d1d;
+}
+
+.aqi-panel-good {
+  background-color: #dcfce7;
+  color: #14532d;
+}
+
+.aqi-panel-moderate {
+  background-color: #fef9c3;
+  color: #713f12;
+}
+
+.aqi-panel-sensitive {
+  background-color: #ffedd5;
+  color: #7c2d12;
+}
+
+.aqi-panel-unhealthy {
+  background-color: #fee2e2;
+  color: #7f1d1d;
+}
+
+.aqi-panel-very-unhealthy {
+  background-color: #f3e8ff;
+  color: #4c1d95;
+}
+
+.aqi-panel-hazardous {
+  background-color: #fecaca;
+  color: #7f1d1d;
+}

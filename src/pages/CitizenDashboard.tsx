@@ -15,8 +15,9 @@ import {
   Construction,
   CircleDot
 } from 'lucide-react';
-import { useState } from 'react';
-import { Link } from 'react-router';
+import { useEffect, useState } from 'react';
+import { Link, useOutletContext } from 'react-router';
+import type { CitizenArea } from '../components/CitizenLayout';
 import { useTheme } from '../contexts/ThemeContext';
 
 type ReportStatus = 'submitted' | 'in-progress' | 'resolved';
@@ -30,9 +31,431 @@ interface RecentReport {
   status: ReportStatus;
 }
 
+interface AirQualityState {
+  pm25: number;
+  previousDayPm25: number | null;
+  updatedAt: string;
+  unit: 'aqi' | 'ugm3';
+  source: 'aqicn' | 'air4thai' | 'open-meteo' | 'fallback';
+}
+
+interface WeatherState {
+  temperature: number;
+  humidity: number;
+  windSpeed: number;
+  weatherCode: number | null;
+  updatedAt: string;
+  source: 'aqicn' | 'air4thai' | 'open-meteo' | 'fallback';
+}
+
+interface CitizenLayoutContext {
+  selectedArea: CitizenArea;
+}
+
+const WEATHER_CODE_LABELS: Record<number, string> = {
+  0: 'ท้องฟ้าโปร่ง',
+  1: 'แดดอ่อน',
+  2: 'มีเมฆบางส่วน',
+  3: 'เมฆมาก',
+  45: 'หมอก',
+  48: 'หมอกจัด',
+  51: 'ฝนปรอยเล็กน้อย',
+  53: 'ฝนปรอยปานกลาง',
+  55: 'ฝนปรอยหนัก',
+  61: 'ฝนเล็กน้อย',
+  63: 'ฝนปานกลาง',
+  65: 'ฝนหนัก',
+  71: 'หิมะเล็กน้อย',
+  73: 'หิมะปานกลาง',
+  75: 'หิมะหนัก',
+  80: 'ฝนตกเป็นช่วง',
+  81: 'ฝนตกเป็นช่วงปานกลาง',
+  82: 'ฝนตกเป็นช่วงหนัก',
+  95: 'พายุฝนฟ้าคะนอง',
+};
+
+const WAQI_TOKEN = import.meta.env.VITE_WAQI_TOKEN as string | undefined;
+const AIR4THAI_PROXY_URL = 'https://r.jina.ai/http://air4thai.pcd.go.th/services/getNewAQI_JSON.php';
+
+interface Air4ThaiStation {
+  stationID: string;
+  areaTH?: string;
+  lat?: string;
+  long?: string;
+  AQILast?: {
+    date?: string;
+    time?: string;
+    PM25?: {
+      aqi?: string;
+      value?: string;
+    };
+  };
+}
+
+interface Air4ThaiStationsResponse {
+  stations?: Air4ThaiStation[];
+}
+
+interface WaqiResponse {
+  status: 'ok' | 'error';
+  data?: {
+    aqi?: number;
+    iaqi?: {
+      pm25?: { v: number };
+      t?: { v: number };
+      h?: { v: number };
+      w?: { v: number };
+    };
+    time?: {
+      iso?: string;
+      s?: string;
+    };
+  };
+}
+
+const parseJinaWrappedJson = <T,>(rawText: string): T | null => {
+  const firstBrace = rawText.indexOf('{');
+  const lastBrace = rawText.lastIndexOf('}');
+
+  if (firstBrace < 0 || lastBrace <= firstBrace) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawText.slice(firstBrace, lastBrace + 1)) as T;
+  } catch {
+    return null;
+  }
+};
+
+const normalizeAreaText = (text?: string) =>
+  (text ?? '')
+    .replace(/[\s,.]/g, '')
+    .replace('เชียงใหม่', '')
+    .replace('อำเภอ', 'อ.')
+    .replace('ตำบล', 'ต.')
+    .toLowerCase();
+
+const toNumber = (value?: string) => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
+const getDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const toRad = (degrees: number) => (degrees * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return earthRadiusKm * c;
+};
+
+const pickBestAir4ThaiStation = (stations: Air4ThaiStation[], selectedArea: CitizenArea) => {
+  const districtKey = normalizeAreaText(selectedArea.district).replace('อ.', '');
+  const subdistrictKey = normalizeAreaText(selectedArea.subdistrict).replace('ต.', '');
+
+  const ranked = stations
+    .map((station) => {
+      const areaKey = normalizeAreaText(station.areaTH);
+      const lat = toNumber(station.lat);
+      const lon = toNumber(station.long);
+      const distance = lat !== null && lon !== null ? getDistanceKm(selectedArea.latitude, selectedArea.longitude, lat, lon) : 9999;
+
+      let score = 0;
+      if (areaKey.includes(districtKey)) {
+        score += 3;
+      }
+      if (subdistrictKey && areaKey.includes(subdistrictKey)) {
+        score += 5;
+      }
+
+      return { station, score, distance };
+    })
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return a.distance - b.distance;
+    });
+
+  return ranked[0]?.station;
+};
+
+const getPm25Status = (value: number, unit: 'aqi' | 'ugm3') => {
+  const normalized = unit === 'aqi' ? value : value * 2;
+
+  if (normalized <= 50) {
+    return {
+      label: 'ดี',
+      textClass: 'text-green-500',
+      dotClass: 'bg-green-500',
+    };
+  }
+
+  if (normalized <= 100) {
+    return {
+      label: 'ปานกลาง',
+      textClass: 'text-yellow-500',
+      dotClass: 'bg-yellow-500',
+    };
+  }
+
+  if (normalized <= 150) {
+    return {
+      label: 'เริ่มมีผลต่อสุขภาพ',
+      textClass: 'text-orange-500',
+      dotClass: 'bg-orange-500',
+    };
+  }
+
+  if (normalized <= 200) {
+    return {
+      label: 'มีผลต่อสุขภาพ',
+      textClass: 'text-red-500',
+      dotClass: 'bg-red-500',
+    };
+  }
+
+  return {
+    label: 'มีผลต่อสุขภาพ',
+    textClass: 'text-purple-500',
+    dotClass: 'bg-purple-500',
+  };
+};
+
+const formatThaiDateTime = (iso: string) => {
+  const date = new Date(iso);
+  return new Intl.DateTimeFormat('th-TH', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+};
+
+const getPm25ProgressWidthClass = (value: number) => {
+  if (value <= 15) return 'w-[10%]';
+  if (value <= 30) return 'w-[20%]';
+  if (value <= 45) return 'w-[30%]';
+  if (value <= 60) return 'w-[40%]';
+  if (value <= 75) return 'w-[50%]';
+  if (value <= 90) return 'w-[60%]';
+  if (value <= 105) return 'w-[70%]';
+  if (value <= 120) return 'w-[80%]';
+  if (value <= 135) return 'w-[90%]';
+  return 'w-full';
+};
+
 export function CitizenDashboard() {
   const [showAlert, setShowAlert] = useState(true);
   const { isDarkMode } = useTheme();
+  const { selectedArea } = useOutletContext<CitizenLayoutContext>();
+  const [airQuality, setAirQuality] = useState<AirQualityState>({
+    pm25: 45,
+    previousDayPm25: null,
+    updatedAt: new Date().toISOString(),
+    unit: 'ugm3',
+    source: 'fallback',
+  });
+  const [weather, setWeather] = useState<WeatherState>({
+    temperature: 24,
+    humidity: 65,
+    windSpeed: 12,
+    weatherCode: null,
+    updatedAt: new Date().toISOString(),
+    source: 'fallback',
+  });
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchEnvironmentData = async () => {
+      try {
+        let airQualityResolved = false;
+
+        if (WAQI_TOKEN && WAQI_TOKEN.trim()) {
+          const waqiResponse = await fetch(
+            `https://api.waqi.info/feed/geo:${selectedArea.latitude};${selectedArea.longitude}/?token=${encodeURIComponent(
+              WAQI_TOKEN.trim()
+            )}`,
+            { signal: controller.signal }
+          );
+
+          if (waqiResponse.ok) {
+            const waqiPayload: WaqiResponse = await waqiResponse.json();
+
+            if (waqiPayload.status === 'ok' && waqiPayload.data) {
+              const pm25Aqi = Number(waqiPayload.data.iaqi?.pm25?.v ?? waqiPayload.data.aqi);
+              const overallAqi = Number(waqiPayload.data.aqi);
+              const currentHumidity = Number(waqiPayload.data.iaqi?.h?.v);
+              const currentTemperature = Number(waqiPayload.data.iaqi?.t?.v);
+              const currentWindSpeed = Number(waqiPayload.data.iaqi?.w?.v);
+              const updatedAt =
+                waqiPayload.data.time?.iso ??
+                waqiPayload.data.time?.s ??
+                new Date().toISOString();
+
+              if (Number.isFinite(pm25Aqi)) {
+                setAirQuality({
+                  pm25: pm25Aqi,
+                  previousDayPm25: Number.isFinite(overallAqi) ? overallAqi : null,
+                  updatedAt,
+                  unit: 'aqi',
+                  source: 'aqicn',
+                });
+                airQualityResolved = true;
+              }
+
+              if (Number.isFinite(currentTemperature) || Number.isFinite(currentHumidity) || Number.isFinite(currentWindSpeed)) {
+                setWeather((prev) => ({
+                  temperature: Number.isFinite(currentTemperature) ? currentTemperature : prev.temperature,
+                  humidity: Number.isFinite(currentHumidity) ? currentHumidity : prev.humidity,
+                  windSpeed: Number.isFinite(currentWindSpeed) ? currentWindSpeed : prev.windSpeed,
+                  weatherCode: prev.weatherCode,
+                  updatedAt,
+                  source: 'aqicn',
+                }));
+              }
+            }
+          }
+        }
+
+        if (!airQualityResolved) {
+          const air4ThaiResponse = await fetch(AIR4THAI_PROXY_URL, { signal: controller.signal });
+          if (air4ThaiResponse.ok) {
+            const rawPayload = await air4ThaiResponse.text();
+            const parsedPayload = parseJinaWrappedJson<Air4ThaiStationsResponse>(rawPayload);
+            const stations = Array.isArray(parsedPayload?.stations)
+              ? parsedPayload.stations.filter((station) => (station.areaTH ?? '').includes('เชียงใหม่'))
+              : [];
+
+            if (stations.length > 0) {
+              const matchedStation = pickBestAir4ThaiStation(stations, selectedArea);
+              const pm25Aqi = toNumber(matchedStation?.AQILast?.PM25?.aqi);
+              const pm25Value = toNumber(matchedStation?.AQILast?.PM25?.value);
+              const dateText = matchedStation?.AQILast?.date ?? '';
+              const timeText = matchedStation?.AQILast?.time ?? '00:00';
+              const updatedAt = dateText ? `${dateText}T${timeText}:00+07:00` : new Date().toISOString();
+
+              if (pm25Aqi !== null && pm25Aqi >= 0) {
+                setAirQuality({
+                  pm25: pm25Aqi,
+                  previousDayPm25: pm25Value,
+                  updatedAt,
+                  unit: 'aqi',
+                  source: 'air4thai',
+                });
+                airQualityResolved = true;
+              }
+            }
+          }
+        }
+
+        const airQualityQuery = new URLSearchParams({
+          latitude: selectedArea.latitude.toString(),
+          longitude: selectedArea.longitude.toString(),
+          current: 'pm2_5',
+          hourly: 'pm2_5',
+          timezone: 'Asia/Bangkok',
+          past_days: '2',
+          forecast_days: '1',
+        });
+
+        const weatherQuery = new URLSearchParams({
+          latitude: selectedArea.latitude.toString(),
+          longitude: selectedArea.longitude.toString(),
+          current: 'temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code',
+          timezone: 'Asia/Bangkok',
+        });
+
+        const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?${weatherQuery.toString()}`, {
+          signal: controller.signal,
+        });
+
+        if (!weatherResponse.ok) {
+          throw new Error('Unable to fetch air quality data');
+        }
+
+        const weatherPayload = await weatherResponse.json();
+
+        const currentTemperature = Number(weatherPayload?.current?.temperature_2m);
+        const currentHumidity = Number(weatherPayload?.current?.relative_humidity_2m);
+        const currentWindSpeed = Number(weatherPayload?.current?.wind_speed_10m);
+        const currentWeatherCode = Number(weatherPayload?.current?.weather_code);
+        const weatherTime = String(weatherPayload?.current?.time ?? new Date().toISOString());
+
+        if (!Number.isFinite(currentTemperature) || !Number.isFinite(currentHumidity) || !Number.isFinite(currentWindSpeed)) {
+          throw new Error('Invalid weather value');
+        }
+
+        if (!airQualityResolved) {
+          const airQualityResponse = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?${airQualityQuery.toString()}`, {
+            signal: controller.signal,
+          });
+
+          if (!airQualityResponse.ok) {
+            throw new Error('Unable to fetch fallback PM2.5 data');
+          }
+
+          const airPayload = await airQualityResponse.json();
+          const currentPm25 = Number(airPayload?.current?.pm2_5);
+          const currentTime = String(airPayload?.current?.time ?? new Date().toISOString());
+          const hourlyTimes: string[] = Array.isArray(airPayload?.hourly?.time) ? airPayload.hourly.time : [];
+          const hourlyPm25: number[] = Array.isArray(airPayload?.hourly?.pm2_5) ? airPayload.hourly.pm2_5 : [];
+
+          const currentIndex = hourlyTimes.findIndex((time) => time === currentTime);
+          const previousDayIndex = currentIndex >= 24 ? currentIndex - 24 : -1;
+          const previousDayValue =
+            previousDayIndex >= 0 && Number.isFinite(hourlyPm25[previousDayIndex])
+              ? Number(hourlyPm25[previousDayIndex])
+              : null;
+
+          if (!Number.isFinite(currentPm25)) {
+            throw new Error('Invalid PM2.5 value');
+          }
+
+          setAirQuality({
+            pm25: currentPm25,
+            previousDayPm25: previousDayValue,
+            updatedAt: currentTime,
+            unit: 'ugm3',
+            source: 'open-meteo',
+          });
+        }
+
+        setWeather({
+          temperature: currentTemperature,
+          humidity: currentHumidity,
+          windSpeed: currentWindSpeed,
+          weatherCode: Number.isFinite(currentWeatherCode) ? currentWeatherCode : null,
+          updatedAt: weatherTime,
+          source: 'open-meteo',
+        });
+      } catch {
+        setAirQuality((prev) => ({ ...prev, source: 'fallback' }));
+        setWeather((prev) => ({ ...prev, source: 'fallback' }));
+      }
+    };
+
+    void fetchEnvironmentData();
+
+    return () => {
+      controller.abort();
+    };
+  }, [selectedArea.latitude, selectedArea.longitude]);
+
+  const pm25Status = getPm25Status(airQuality.pm25, airQuality.unit);
+  const pm25ProgressWidthClass = getPm25ProgressWidthClass(airQuality.unit === 'aqi' ? airQuality.pm25 / 2 : airQuality.pm25);
+  const weatherLabel = weather.weatherCode !== null ? WEATHER_CODE_LABELS[weather.weatherCode] ?? 'สภาพอากาศแปรปรวน' : 'ไม่ทราบสภาพอากาศ';
+  const trendPercent =
+    airQuality.previousDayPm25 && airQuality.previousDayPm25 > 0 && airQuality.unit === 'ugm3'
+      ? Math.round(((airQuality.pm25 - airQuality.previousDayPm25) / airQuality.previousDayPm25) * 100)
+      : null;
+  const isImproving = trendPercent !== null && trendPercent < 0;
 
   const recentReports: RecentReport[] = [
     {
@@ -137,26 +560,43 @@ export function CitizenDashboard() {
               <Wind className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
               <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>คุณภาพอากาศ PM2.5</span>
             </div>
-            <div className="flex items-center gap-1 text-green-500 text-sm">
-              <TrendingDown className="w-4 h-4" />
-              <span>-12%</span>
-            </div>
+            {trendPercent !== null ? (
+              <div className={`flex items-center gap-1 text-sm ${isImproving ? 'text-green-500' : 'text-red-500'}`}>
+                {isImproving ? <TrendingDown className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
+                <span>{trendPercent > 0 ? `+${trendPercent}%` : `${trendPercent}%`}</span>
+              </div>
+            ) : (
+              <div className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>-</div>
+            )}
           </div>
 
           <div className="mb-4">
             <div className={`text-5xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              45 <span className={`text-2xl ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>µg/m³</span>
+              {Math.round(airQuality.pm25)}{' '}
+              <span className={`text-2xl ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                {airQuality.unit === 'aqi' ? 'AQI' : 'µg/m³'}
+              </span>
             </div>
             <div className="flex items-center gap-2 mt-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-green-500 text-sm font-medium">ดี</span>
+              <div className={`w-2 h-2 rounded-full animate-pulse ${pm25Status.dotClass}`}></div>
+              <span className={`${pm25Status.textClass} text-sm font-medium`}>{pm25Status.label}</span>
             </div>
           </div>
 
           <div className="space-y-2">
-            <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>ค่าเฉลี่ยย่อยอำเภอ ช้างม่อย เมืองเชียงใหม่</div>
+            <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              {airQuality.source !== 'fallback'
+                ? `ข้อมูลจริง ${selectedArea.label} จาก ${
+                    airQuality.source === 'aqicn'
+                      ? 'AQICN/WAQI'
+                      : airQuality.source === 'air4thai'
+                        ? 'Air4Thai (PCD)'
+                        : 'Open-Meteo'
+                  } อัพเดท ${formatThaiDateTime(airQuality.updatedAt)}`
+                : 'กำลังใช้ค่าประมาณชั่วคราว (รอเชื่อมต่อ API คุณภาพอากาศ)'}
+            </div>
             <div className={`h-2 rounded-full overflow-hidden ${isDarkMode ? 'bg-neutral-800' : 'bg-gray-200'}`}>
-              <div className="h-full w-[30%] bg-gradient-to-r from-green-500 via-yellow-500 to-orange-500 rounded-full"></div>
+              <div className={`h-full bg-gradient-to-r from-green-500 via-yellow-500 to-orange-500 rounded-full ${pm25ProgressWidthClass}`}></div>
             </div>
             <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-600'}`}>
               <span>0-50</span>
@@ -181,9 +621,9 @@ export function CitizenDashboard() {
           <div className="flex items-start justify-between mb-6">
             <div>
               <div className={`text-5xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                24°
+                {Math.round(weather.temperature)}°
               </div>
-              <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>แดดจ้า</div>
+              <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{weatherLabel}</div>
             </div>
             <div className="w-16 h-16 text-yellow-500">
               <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
@@ -205,16 +645,21 @@ export function CitizenDashboard() {
               <Droplets className="w-4 h-4 text-blue-400" />
               <div>
                 <div className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-600'}`}>ความชื้น</div>
-                <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>65%</div>
+                <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{Math.round(weather.humidity)}%</div>
               </div>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Navigation className="w-4 h-4 text-gray-400" />
               <div>
                 <div className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-600'}`}>ลม</div>
-                <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>12 km/h</div>
+                <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{Math.round(weather.windSpeed)} km/h</div>
               </div>
             </div>
+          </div>
+          <div className={`text-xs mt-4 ${isDarkMode ? 'text-gray-500' : 'text-gray-600'}`}>
+            {weather.source !== 'fallback'
+              ? `ข้อมูลจริง ${selectedArea.label} จาก ${weather.source === 'aqicn' ? 'AQICN/WAQI' : 'Open-Meteo'} อัพเดท ${formatThaiDateTime(weather.updatedAt)}`
+              : 'กำลังใช้ค่าประมาณชั่วคราว (รอเชื่อมต่อ API สภาพอากาศ)'}
           </div>
         </div>
 

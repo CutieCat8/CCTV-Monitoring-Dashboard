@@ -14,14 +14,101 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+
+export interface CitizenArea {
+  id: string;
+  label: string;
+  district: string;
+  subdistrict?: string;
+  latitude: number;
+  longitude: number;
+}
+
+const CITIZEN_AREAS: CitizenArea[] = [
+  {
+    id: 'mueang-chang-moi',
+    label: 'อ.เมืองเชียงใหม่ - ต.ช้างม่อย',
+    district: 'อ.เมืองเชียงใหม่',
+    subdistrict: 'ต.ช้างม่อย',
+    latitude: 18.7942,
+    longitude: 98.9952,
+  },
+  {
+    id: 'mueang-tha-phae',
+    label: 'อ.เมืองเชียงใหม่ - ต.ท่าแพ',
+    district: 'อ.เมืองเชียงใหม่',
+    subdistrict: 'ต.ท่าแพ',
+    latitude: 18.7878,
+    longitude: 98.9931,
+  },
+  {
+    id: 'mueang-si-phum',
+    label: 'อ.เมืองเชียงใหม่ - ต.ศรีภูมิ',
+    district: 'อ.เมืองเชียงใหม่',
+    subdistrict: 'ต.ศรีภูมิ',
+    latitude: 18.7938,
+    longitude: 98.9851,
+  },
+  {
+    id: 'mueang-hai-ya',
+    label: 'อ.เมืองเชียงใหม่ - ต.หายยา',
+    district: 'อ.เมืองเชียงใหม่',
+    subdistrict: 'ต.หายยา',
+    latitude: 18.7765,
+    longitude: 98.9894,
+  },
+  {
+    id: 'mueang-suthep',
+    label: 'อ.เมืองเชียงใหม่ - ต.สุเทพ',
+    district: 'อ.เมืองเชียงใหม่',
+    subdistrict: 'ต.สุเทพ',
+    latitude: 18.7904,
+    longitude: 98.9515,
+  },
+  {
+    id: 'sankamphaeng',
+    label: 'อ.สันกำแพง',
+    district: 'อ.สันกำแพง',
+    latitude: 18.7486,
+    longitude: 99.1229,
+  },
+  {
+    id: 'mae-rim',
+    label: 'อ.แม่ริม',
+    district: 'อ.แม่ริม',
+    latitude: 18.9132,
+    longitude: 98.9606,
+  },
+];
 
 export function CitizenLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [selectedDistrict, setSelectedDistrict] = useState('เมืองเชียงใหม่ - ช้างม่อย');
+  const [selectedAreaId, setSelectedAreaId] = useState('mueang-chang-moi');
+  const [isAreaMenuOpen, setIsAreaMenuOpen] = useState(false);
   const { isDarkMode, toggleTheme } = useTheme();
+  const selectedArea = CITIZEN_AREAS.find((area) => area.id === selectedAreaId) ?? CITIZEN_AREAS[0];
+  const areaDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!areaDropdownRef.current) {
+        return;
+      }
+
+      if (!areaDropdownRef.current.contains(event.target as Node)) {
+        setIsAreaMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      window.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleLogout = () => {
     navigate('/login');
@@ -97,34 +184,72 @@ export function CitizenLayout() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Top Bar */}
-        <header className={`h-16 border-b flex items-center justify-between px-6 transition-colors duration-300 ${
+        <header className={`relative z-[1200] h-16 border-b flex items-center justify-between px-6 transition-colors duration-300 ${
           isDarkMode 
             ? 'bg-neutral-950 border-neutral-800'
             : 'bg-white border-gray-200'
         }`}>
           {/* Location Selector */}
-          <div className={`flex items-center gap-3 px-4 py-2 rounded-lg border transition-colors duration-300 ${
-            isDarkMode 
-              ? 'bg-neutral-900 border-neutral-800'
-              : 'bg-gray-50 border-gray-200'
-          }`}>
-            <MapPin className="w-5 h-5 text-orange-600 flex-shrink-0" />
-            <select
-              value={selectedDistrict}
-              onChange={(e) => setSelectedDistrict(e.target.value)}
-              className={`bg-transparent text-sm border-none outline-none cursor-pointer appearance-none pr-6 transition-colors duration-300 ${
-                isDarkMode ? 'text-white' : 'text-gray-900'
+          <div className="relative" ref={areaDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsAreaMenuOpen((prev) => !prev)}
+              className={`w-[360px] h-[46px] rounded-xl border px-4 flex items-center justify-between text-sm transition-all duration-200 ${
+                isDarkMode
+                  ? 'bg-neutral-900 border-neutral-700 text-white hover:border-neutral-500'
+                  : 'bg-white border-gray-300 text-gray-900 hover:border-orange-300 shadow-sm'
               }`}
-              aria-label="เลือกเขต"
+              aria-haspopup="listbox"
+              aria-label="เลือกพื้นที่ (อำเภอ/ตำบล)"
             >
-              <option value="เมืองเชียงใหม่ - ช้างม่อย">เมืองเชียงใหม่ - ช้างม่อย</option>
-              <option value="เมืองเชียงใหม่ - ท่าแพ">เมืองเชียงใหม่ - ท่าแพ</option>
-              <option value="เมืองเชียงใหม่ - ศรีภูมิ">เมืองเชียงใหม่ - ศรีภูมิ</option>
-              <option value="เมืองเชียงใหม่ - หายยา">เมืองเชียงใหม่ - หายยา</option>
-              <option value="สันกำแพง">สันกำแพง</option>
-              <option value="แม่ริม">แม่ริม</option>
-            </select>
-            <ChevronDown className="w-4 h-4 text-gray-400 -ml-4" />
+              <span className="flex items-center gap-3 min-w-0">
+                <MapPin className="w-5 h-5 text-orange-600 flex-shrink-0" />
+                <span className="truncate font-medium">{selectedArea.label}</span>
+              </span>
+              <ChevronDown
+                className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${
+                  isAreaMenuOpen ? 'rotate-180' : ''
+                } ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}
+              />
+            </button>
+
+            {isAreaMenuOpen && (
+              <div
+                className={`absolute mt-2 w-[360px] rounded-xl border overflow-hidden z-[1300] ${
+                  isDarkMode ? 'bg-neutral-900 border-neutral-700' : 'bg-white border-gray-300 shadow-lg'
+                }`}
+              >
+                <div className={`${isDarkMode ? 'bg-neutral-800' : 'bg-blue-50 border-b border-blue-200'} px-4 py-2 text-xs font-semibold ${isDarkMode ? 'text-gray-300' : 'text-blue-700'}`}>
+                  เลือกพื้นที่
+                </div>
+                <div className="max-h-64 overflow-auto py-1">
+                  {CITIZEN_AREAS.map((area) => {
+                    const isSelected = area.id === selectedAreaId;
+                    return (
+                      <button
+                        key={area.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedAreaId(area.id);
+                          setIsAreaMenuOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                          isSelected
+                            ? isDarkMode
+                              ? 'bg-neutral-800 text-orange-300'
+                              : 'bg-orange-50 text-orange-700'
+                            : isDarkMode
+                              ? 'text-gray-200 hover:bg-neutral-800'
+                              : 'text-gray-800 hover:bg-gray-50'
+                        }`}
+                      >
+                        {area.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Side */}
@@ -210,7 +335,7 @@ export function CitizenLayout() {
         <main className={`flex-1 overflow-auto transition-colors duration-300 ${
           isDarkMode ? 'bg-black' : 'bg-gray-50'
         }`}>
-          <Outlet />
+          <Outlet context={{ selectedArea }} />
         </main>
       </div>
     </div>
