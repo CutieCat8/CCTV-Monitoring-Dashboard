@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { X, MapPin, Clock, Camera, Download, Eye, CheckCircle } from 'lucide-react';
+import { X, Download, Eye, CheckCircle } from 'lucide-react';
 import { Event, violationTypes } from '../data/events';
 
 interface EventDetailPanelProps {
@@ -7,13 +7,29 @@ interface EventDetailPanelProps {
   onClose: () => void;
 }
 
+const rules = {
+  'no-helmet': 'Section 122: All motorcycle riders and passengers must wear safety helmets that meet standards.',
+  'illegal-parking': 'Section 118: Parking is prohibited on roads with yellow continuous lines or in restricted zones.',
+  'red-light': 'Section 118: Drivers must stop at red traffic lights and may not proceed until the green light is shown.',
+  'wrong-lane': 'Section 34: Vehicles must stay in designated lanes and follow road markings.',
+};
+
+function Row({ label, value, mono }: { label: string; value?: string | number; mono?: boolean }) {
+  if (value === undefined || value === '') return null;
+  return (
+    <div className="flex items-baseline justify-between gap-6 py-2.5 border-b border-neutral-100">
+      <dt className="text-xs text-neutral-400 shrink-0">{label}</dt>
+      <dd className={`text-sm text-neutral-800 text-right break-all ${mono ? 'font-mono text-xs' : ''}`}>{value}</dd>
+    </div>
+  );
+}
+
 export function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
   if (!event) return null;
 
   const violationType = violationTypes[event.type];
   const eventId = event.apiId || `EV-${String(event.id).padStart(6, '0')}`;
-  
-  // Parse coordinate
+
   let latitude = '';
   let longitude = '';
   if (event.coordinate) {
@@ -24,223 +40,95 @@ export function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
     }
   }
 
+  const actions = [
+    { icon: Eye, label: 'View footage', primary: true },
+    { icon: CheckCircle, label: 'Mark reviewed' },
+    { icon: Download, label: 'Export' },
+  ];
+
   return (
     <AnimatePresence>
       {event && (
         <>
-          {/* Background Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/30 z-40"
+            className="fixed inset-0 bg-black/20 z-40"
           />
-          
-          {/* Slide-in Panel */}
+
           <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.3, ease: 'easeOut' }}
-            className="fixed right-0 top-0 bottom-0 w-[35%] bg-white shadow-2xl z-50 flex flex-col"
+            className="fixed right-0 top-0 bottom-0 w-[35%] min-w-[360px] bg-[#fafaf8] shadow-[-12px_0_40px_rgba(0,0,0,0.06)] z-50 flex flex-col"
           >
-            {/* Header */}
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className={`inline-block px-3 py-1 rounded-full text-sm font-semibold mb-2 ${violationType.color}`}>
-                    {violationType.label}
-                  </div>
-                  <div className="text-sm text-gray-500">Event ID: {eventId}</div>
-                </div>
-                <button
-                  onClick={onClose}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  aria-label="Close panel"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
+            <header className="px-8 pt-8 pb-5 flex items-start justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.14em] text-neutral-400">{eventId}</p>
+                <h2 className="text-xl font-light tracking-tight text-neutral-900 mt-2">{violationType.label}</h2>
+                <p className="text-sm text-neutral-400 mt-1">
+                  {event.timestamp.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  {' · '}
+                  {event.timestamp.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </p>
               </div>
-            </div>
-            
-            {/* Content - Scrollable */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {/* Large Image */}
-              <div className="relative rounded-lg overflow-hidden mb-6">
+              <button
+                onClick={onClose}
+                className="p-2 -mr-2 rounded-full hover:bg-neutral-200/60 transition-colors"
+                aria-label="Close panel"
+              >
+                <X className="w-4 h-4 text-neutral-500" />
+              </button>
+            </header>
+
+            <div className="flex-1 overflow-y-auto px-8 pb-8">
+              {event.thumbnail && (
                 <img
                   src={event.thumbnail}
                   alt="Event snapshot"
-                  className="w-full h-64 object-cover"
+                  className="w-full h-60 object-cover rounded-xl bg-neutral-200 mb-8"
                 />
-                <div className="absolute top-3 left-3 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                  <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                  DETECTED
-                </div>
-              </div>
-              
-              {/* Event Information */}
-              <div className="space-y-4 mb-6">
-                <h3 className="font-semibold text-gray-900">Event Information</h3>
-                
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-gray-600 mb-1">
-                      <Clock className="w-4 h-4" />
-                      <span className="text-xs">Time Detected</span>
-                    </div>
-                    <div className="font-semibold text-gray-900">
-                      {event.timestamp.toLocaleTimeString('th-TH', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit'
-                      })}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {event.timestamp.toLocaleDateString('th-TH', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric'
-                      })}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <div className="flex items-start gap-2 text-blue-700">
-                    <MapPin className="w-4 h-4 mt-1 flex-shrink-0" />
-                    <div>
-                      <div className="text-xs font-medium mb-1">Camera Location</div>
-                      <div className="font-semibold">{event.cameraName}</div>
-                      {event.installationArea && (
-                        <div className="text-xs mt-1">Area: {event.installationArea}</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Additional Details */}
-              <div className="space-y-4 mb-6">
-                <h3 className="font-semibold text-gray-900">Additional Details</h3>
-                
-                <div className="space-y-3">
-                  {event.taskName && (
-                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-600">Detection Task</span>
-                      <span className="text-sm font-medium text-gray-900">{event.taskName}</span>
-                    </div>
-                  )}
-                  
-                  {event.apiId && (
-                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-600">API ID</span>
-                      <span className="text-sm font-medium text-gray-900 font-mono">{event.apiId}</span>
-                    </div>
-                  )}
-                  
-                  {event.taskId && (
-                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-600">Task ID</span>
-                      <span className="text-sm font-medium text-gray-900 font-mono">{event.taskId}</span>
-                    </div>
-                  )}
-                  
-                  {event.boxCode && (
-                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-600">Box Code</span>
-                      <span className="text-sm font-medium text-gray-900 font-mono">{event.boxCode}</span>
-                    </div>
-                  )}
-                  
-                  {event.equipmentId && (
-                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-600">Equipment ID</span>
-                      <span className="text-sm font-medium text-gray-900 font-mono text-xs">{event.equipmentId}</span>
-                    </div>
-                  )}
-                  
-                  {event.equipmentName && (
-                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-600">Equipment Name</span>
-                      <span className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                        <Camera className="w-4 h-4" />
-                        {event.equipmentName}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {latitude && longitude && (
-                    <>
-                      <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                        <span className="text-sm text-gray-600">Latitude</span>
-                        <span className="text-sm font-medium text-gray-900 font-mono">{latitude}</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                        <span className="text-sm text-gray-600">Longitude</span>
-                        <span className="text-sm font-medium text-gray-900 font-mono">{longitude}</span>
-                      </div>
-                    </>
-                  )}
-                  
-                  {event.installationLocation && (
-                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-600">Installation Location</span>
-                      <span className="text-sm font-medium text-gray-900">{event.installationLocation}</span>
-                    </div>
-                  )}
-                  
-                  {event.eventTypeId !== undefined && (
-                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-600">Event Type ID</span>
-                      <span className="text-sm font-medium text-gray-900">{event.eventTypeId}</span>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">Violation Type</span>
-                    <span className="text-sm font-medium text-gray-900">{violationType.label}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">Camera ID</span>
-                    <span className="text-sm font-medium text-gray-900">CAM-{String(event.cameraId).padStart(3, '0')}</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Traffic Rule Violated */}
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                <h4 className="font-semibold text-red-900 mb-2">Traffic Rule Violated</h4>
-                <p className="text-sm text-red-700">
-                  {event.type === 'no-helmet' && 'Section 122: All motorcycle riders and passengers must wear safety helmets that meet standards.'}
-                  {event.type === 'illegal-parking' && 'Section 118: Parking is prohibited on roads with yellow continuous lines or in restricted zones.'}
-                  {event.type === 'red-light' && 'Section 118: Drivers must stop at red traffic lights and may not proceed until the green light is shown.'}
-                  {event.type === 'wrong-lane' && 'Section 34: Vehicles must stay in designated lanes and follow road markings.'}
-                </p>
+              )}
+
+              <dl className="mb-8">
+                <Row label="Camera" value={event.cameraName} />
+                <Row label="Camera ID" value={`CAM-${String(event.cameraId).padStart(3, '0')}`} />
+                <Row label="Area" value={event.installationArea} />
+                <Row label="Installation" value={event.installationLocation} />
+                <Row label="Detection task" value={event.taskName} />
+                <Row label="Task ID" value={event.taskId} mono />
+                <Row label="Box code" value={event.boxCode} mono />
+                <Row label="Equipment" value={event.equipmentName} />
+                <Row label="Equipment ID" value={event.equipmentId} mono />
+                <Row label="Latitude" value={latitude} mono />
+                <Row label="Longitude" value={longitude} mono />
+                <Row label="Event type ID" value={event.eventTypeId} />
+              </dl>
+
+              <div className="border-l-2 border-neutral-900 pl-4">
+                <h3 className="text-xs uppercase tracking-[0.14em] text-neutral-400 mb-2">Rule violated</h3>
+                <p className="text-sm font-light leading-relaxed text-neutral-700">{rules[event.type]}</p>
               </div>
             </div>
-            
-            {/* Action Buttons - Fixed at Bottom */}
-            <div className="p-6 border-t border-gray-200 bg-gray-50">
-              <div className="grid grid-cols-3 gap-3">
-                <button className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                  <Eye className="w-4 h-4" />
-                  <span className="text-sm">View Footage</span>
+
+            <footer className="px-8 py-5 border-t border-neutral-200/70 flex gap-2">
+              {actions.map(({ icon: Icon, label, primary }) => (
+                <button
+                  key={label}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm transition-colors ${
+                    primary
+                      ? 'bg-neutral-900 text-white hover:bg-neutral-700'
+                      : 'bg-white text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-100'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
                 </button>
-                
-                <button className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
-                  <CheckCircle className="w-4 h-4" />
-                  <span className="text-sm">Mark Reviewed</span>
-                </button>
-                
-                <button className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium">
-                  <Download className="w-4 h-4" />
-                  <span className="text-sm">Export</span>
-                </button>
-              </div>
-            </div>
+              ))}
+            </footer>
           </motion.div>
         </>
       )}

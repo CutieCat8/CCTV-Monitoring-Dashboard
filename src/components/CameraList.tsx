@@ -1,54 +1,76 @@
-import { Video, Circle } from 'lucide-react';
-import { cameras } from '../data/cameras';
+import { cameras, type Camera } from '../data/cameras';
 
 interface CameraListProps {
   selectedCamera: number;
   onSelectCamera: (id: number) => void;
 }
 
-export function CameraList({ selectedCamera, onSelectCamera }: CameraListProps) {
+function Group({
+  label,
+  items,
+  selectedCamera,
+  onSelectCamera,
+}: {
+  label: string;
+  items: Camera[];
+  selectedCamera: number;
+  onSelectCamera: (id: number) => void;
+}) {
   return (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-      <div className="p-6 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">CCTV Cameras</h2>
-        <p className="text-sm text-gray-500 mt-1">{cameras.length} cameras active</p>
-      </div>
-      
-      <div className="flex-1 overflow-y-auto">
-        {cameras.map((camera) => (
+    <section className="pb-4">
+      <h3 className="px-6 pt-4 pb-2 text-[11px] uppercase tracking-[0.14em] text-neutral-400">
+        {label} <span className="ml-1 tabular-nums">{items.length}</span>
+      </h3>
+      {items.map((camera) => {
+        const active = selectedCamera === camera.id;
+        const live = camera.status === 'live';
+        return (
           <button
             key={camera.id}
             onClick={() => onSelectCamera(camera.id)}
-            className={`w-full p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors text-left ${
-              selectedCamera === camera.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
+            className={`group relative w-full text-left pl-6 pr-4 py-2.5 flex items-center gap-3 transition-colors ${
+              active ? 'bg-white' : 'hover:bg-white/60'
             }`}
           >
-            <div className="flex items-start gap-3">
-              <div className={`mt-1 p-2 rounded-lg ${
-                selectedCamera === camera.id ? 'bg-blue-100' : 'bg-gray-100'
-              }`}>
-                <Video className={`w-4 h-4 ${
-                  selectedCamera === camera.id ? 'text-blue-600' : 'text-gray-600'
-                }`} />
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-gray-900 text-sm">{camera.name}</div>
-                <div className="flex items-center gap-2 mt-1">
-                  <Circle className={`w-2 h-2 fill-current ${
-                    camera.status === 'live' ? 'text-green-500' : 'text-gray-400'
-                  }`} />
-                  <span className={`text-xs ${
-                    camera.status === 'live' ? 'text-green-600' : 'text-gray-500'
-                  }`}>
-                    {camera.status === 'live' ? 'Live' : 'Offline'}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <span
+              className={`absolute left-0 top-2 bottom-2 w-[2px] rounded-full transition-opacity ${
+                active ? 'bg-neutral-900 opacity-100' : 'opacity-0'
+              }`}
+            />
+            <span
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${live ? 'bg-emerald-500' : 'bg-neutral-300'}`}
+            />
+            <span className="min-w-0">
+              <span
+                className={`block truncate text-[13px] leading-snug ${
+                  active ? 'text-neutral-900' : live ? 'text-neutral-600' : 'text-neutral-400'
+                }`}
+              >
+                {camera.name}
+              </span>
+              <span className="block truncate text-[11px] text-neutral-400">{camera.location}</span>
+            </span>
           </button>
-        ))}
+        );
+      })}
+    </section>
+  );
+}
+
+export function CameraList({ selectedCamera, onSelectCamera }: CameraListProps) {
+  const live = cameras.filter((c) => c.status === 'live');
+  const offline = cameras.filter((c) => c.status !== 'live');
+
+  return (
+    <aside className="w-64 shrink-0 bg-[#fafaf8] border-r border-neutral-200/70 flex flex-col">
+      <header className="px-6 pt-7 pb-3">
+        <h2 className="text-base font-light tracking-tight text-neutral-900">Cameras</h2>
+      </header>
+
+      <div className="flex-1 overflow-y-auto">
+        <Group label="Live" items={live} selectedCamera={selectedCamera} onSelectCamera={onSelectCamera} />
+        <Group label="Offline" items={offline} selectedCamera={selectedCamera} onSelectCamera={onSelectCamera} />
       </div>
-    </div>
+    </aside>
   );
 }

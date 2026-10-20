@@ -11,39 +11,19 @@ export function LiveMonitoring() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
   return (
-    <div className="flex h-full">
-      {/* Left Sidebar - Camera List */}
-      <CameraList 
-        selectedCamera={selectedCamera}
-        onSelectCamera={setSelectedCamera}
-      />
-      
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex flex-1 overflow-hidden">
-          {/* Live Feed */}
-          <div className="flex-1 p-6 overflow-auto">
-            <LiveFeed selectedCamera={selectedCamera} />
-            
-            {/* Traffic Analytics */}
-            <div className="mt-6">
-              <TrafficAnalytics selectedCamera={selectedCamera} />
-            </div>
-          </div>
-          
-          {/* Right Panel - Events */}
-          <EventsPanel 
-            onEventClick={setSelectedEvent}
-            selectedCamera={selectedCamera}
-          />
+    <div className="flex h-full bg-[#f7f7f5] text-neutral-900">
+      <CameraList selectedCamera={selectedCamera} onSelectCamera={setSelectedCamera} />
+
+      <main className="flex-1 min-w-0 overflow-y-auto">
+        <div className="max-w-5xl mx-auto px-10 py-8 space-y-12">
+          <LiveFeed selectedCamera={selectedCamera} />
+          <TrafficAnalytics selectedCamera={selectedCamera} />
         </div>
-      </div>
-      
-      {/* Event Detail Slide-in Panel */}
-      <EventDetailPanel 
-        event={selectedEvent}
-        onClose={() => setSelectedEvent(null)}
-      />
+      </main>
+
+      <EventsPanel onEventClick={setSelectedEvent} selectedCamera={selectedCamera} />
+
+      <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
     </div>
   );
 }
